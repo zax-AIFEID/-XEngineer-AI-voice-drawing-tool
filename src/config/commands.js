@@ -319,7 +319,7 @@ export const DRAWING_COMMANDS = [
     feedback: '已切换到描边模式',
     description: '切换到描边模式'
   }
-],
+];
 
 /**
  * 所有指令配置
@@ -375,7 +375,7 @@ export function getCommandHelp(category = null) {
  * @returns {Object|null} 指令配置
  */
 export function findCommandByKeyword(keyword) {
-  return ALL_COMMANDS.find(command => 
+  return ALL_COMMANDS.find(command =>
     command.keywords.some(k => keyword.includes(k))
   ) || null;
 }
