@@ -2,14 +2,15 @@
 
 import { VoiceRecognizer } from './core/VoiceRecognizer.js';
 import { CommandParser } from './core/CommandParser.js';
+import { AICommandParser, initAICommandParser } from './core/AICommandParser.js';
 import { DrawingEngine } from './core/DrawingEngine.js';
 import { CanvasComponent } from './components/Canvas.js';
-import { ControlPanel } from './components/ControlPanel.js';
 import { CommandHelp } from './components/CommandHelp.js';
 import { LogPanel } from './components/LogPanel.js';
 import { AppState } from './state/AppState.js';
 import { SpeechFeedback } from './utils/speechFeedback.js';
 import { DebugHelper } from './utils/helpers.js';
+import { AI_CONFIG } from './config/ai.js';
 
 /**
  * 应用主类
@@ -47,12 +48,14 @@ class VoiceDrawingApp {
 
     // UI组件
     this.canvasComponent = null;
-    this.controlPanel = null;
     this.commandHelp = null;
     this.logPanel = null;
 
     // 语音反馈
     this.speechFeedback = null;
+
+    // AI 指令解析器
+    this.aiCommandParser = null;
 
     // 是否已初始化
     this.initialized = false;
@@ -81,11 +84,11 @@ class VoiceDrawingApp {
       // 3. 初始化日志面板
       this.initLogPanel();
 
-      // 4. 初始化绘图引擎
-      this.initDrawingEngine();
-
-      // 5. 初始化UI组件
+      // 4. 初始化UI组件
       this.initUIComponents();
+
+      // 5. 初始化绘图引擎
+      this.initDrawingEngine();
 
       // 6. 初始化指令解析器
       this.initCommandParser();
@@ -157,14 +160,17 @@ class VoiceDrawingApp {
    * 初始化绘图引擎
    */
   initDrawingEngine() {
-    // 创建隐藏的canvas元素
-    const canvasContainer = document.createElement('div');
-    canvasContainer.id = 'canvasContainer';
-    canvasContainer.style.cssText = 'display: none;';
-    canvasContainer.innerHTML = `<canvas id="${this.options.canvasId}"></canvas>`;
-    document.getElementById(this.options.containerId).appendChild(canvasContainer);
+    // 从 CanvasComponent 获取 canvas 元素
+    const canvas = this.canvasComponent ? this.canvasComponent.getCanvas() : null;
 
-    this.drawingEngine = new DrawingEngine(this.options.canvasId);
+    if (canvas) {
+      // 如果 CanvasComponent 已创建，则复用其 canvas
+      this.drawingEngine = new DrawingEngine(canvas);
+    } else {
+      // 如果 CanvasComponent 还未创建，则通过 ID 查找（降级方案）
+      this.drawingEngine = new DrawingEngine(this.options.canvasId);
+    }
+
     this.debug.log('绘图引擎已初始化');
   }
 
@@ -174,15 +180,7 @@ class VoiceDrawingApp {
   initUIComponents() {
     // 初始化画布组件
     this.canvasComponent = new CanvasComponent({
-      containerId: this.options.containerId
-    });
-
-    // 初始化控制面板
-    this.controlPanel = new ControlPanel({
-      containerId: this.options.containerId,
-      onVoiceToggle: (isActive) => this.handleVoiceToggle(isActive),
-      onToolSelect: (tool) => this.handleToolSelect(tool),
-      onAction: (action) => this.handleAction(action)
+      containerId: 'canvasContainer'
     });
 
     // 初始化指令帮助面板
@@ -191,6 +189,174 @@ class VoiceDrawingApp {
     });
 
     this.debug.log('UI组件已初始化');
+  }
+
+  /**
+   * 绑定静态按钮事件
+   */
+  bindStaticButtonEvents() {
+    // 语音控制按钮
+    const startVoiceBtn = document.getElementById('startVoiceBtn');
+    const stopVoiceBtn = document.getElementById('stopVoiceBtn');
+
+    if (startVoiceBtn) {
+      startVoiceBtn.addEventListener('click', () => {
+        this.startVoice();
+        startVoiceBtn.disabled = true;
+        stopVoiceBtn.disabled = false;
+      });
+    }
+
+    if (stopVoiceBtn) {
+      stopVoiceBtn.addEventListener('click', () => {
+        this.stopVoice();
+        stopVoiceBtn.disabled = true;
+        startVoiceBtn.disabled = false;
+      });
+    }
+
+    // 工具按钮
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tool = btn.dataset.tool;
+        if (tool) {
+          this.setTool(tool);
+          // 更新选中状态
+          document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
+
+    // 调色盘（自定义颜色）
+    const colorPicker = document.getElementById('colorPicker');
+    const colorPickerValue = document.getElementById('colorPickerValue');
+    if (colorPicker) {
+      colorPicker.addEventListener('input', () => {
+        const color = colorPicker.value;
+        this.setColor(color);
+        // 更新显示值
+        if (colorPickerValue) {
+          colorPickerValue.textContent = color;
+        }
+        // 取消预设颜色的选中状态
+        document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+      });
+    }
+
+    // 颜色按钮（预设颜色）
+    document.querySelectorAll('.color-swatch').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        if (color) {
+          this.setColor(color);
+          // 更新选中状态
+          document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          // 同步更新调色盘
+          if (colorPicker) {
+            colorPicker.value = color;
+          }
+          if (colorPickerValue) {
+            colorPickerValue.textContent = color;
+          }
+        }
+      });
+    });
+
+    // 大小滑块
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sizeValue = document.getElementById('sizeValue');
+    if (sizeSlider) {
+      sizeSlider.addEventListener('input', () => {
+        const size = parseInt(sizeSlider.value);
+        this.setSize(size);
+        if (sizeValue) {
+          sizeValue.textContent = `${size}px`;
+        }
+      });
+    }
+
+    // 变细/加粗按钮
+    const decreaseSizeBtn = document.getElementById('decreaseSizeBtn');
+    const increaseSizeBtn = document.getElementById('increaseSizeBtn');
+
+    if (decreaseSizeBtn) {
+      decreaseSizeBtn.addEventListener('click', () => {
+        this.decreaseSize();
+        if (sizeSlider && sizeValue) {
+          sizeValue.textContent = `${sizeSlider.value}px`;
+        }
+      });
+    }
+
+    if (increaseSizeBtn) {
+      increaseSizeBtn.addEventListener('click', () => {
+        this.increaseSize();
+        if (sizeSlider && sizeValue) {
+          sizeValue.textContent = `${sizeSlider.value}px`;
+        }
+      });
+    }
+
+    // 操作按钮
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
+    if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
+    if (clearBtn) clearBtn.addEventListener('click', () => this.clearCanvas());
+    if (saveBtn) saveBtn.addEventListener('click', () => this.saveImage());
+
+    // 面板折叠按钮
+    document.querySelectorAll('.panel-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const panel = toggle.closest('.panel');
+        const content = panel.querySelector('.panel-content');
+        if (content) {
+          content.classList.toggle('collapsed');
+          toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+        }
+      });
+    });
+
+    // 指令帮助分类标签
+    document.querySelectorAll('.category-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const category = tab.dataset.category;
+        if (category && this.commandHelp) {
+          this.commandHelp.filterByCategory(category);
+          // 更新选中状态
+          document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        }
+      });
+    });
+
+    // 指令搜索
+    const commandSearch = document.getElementById('commandSearch');
+    if (commandSearch && this.commandHelp) {
+      commandSearch.addEventListener('input', (e) => {
+        this.commandHelp.searchCommands(e.target.value);
+      });
+    }
+
+    // 网格切换按钮
+    const toggleGridBtn = document.getElementById('toggleGridBtn');
+    if (toggleGridBtn) {
+      toggleGridBtn.addEventListener('click', () => {
+        const isEnabled = toggleGridBtn.dataset.grid === 'true';
+        const newState = !isEnabled;
+        toggleGridBtn.dataset.grid = newState.toString();
+        toggleGridBtn.classList.toggle('active', newState);
+        toggleGridBtn.querySelector('span:last-child').textContent = newState ? '显示网格' : '隐藏网格';
+        this.toggleGrid(newState);
+      });
+    }
+
+    this.debug.log('静态按钮事件绑定完成');
   }
 
   /**
@@ -203,7 +369,23 @@ class VoiceDrawingApp {
       minMatchScore: 0.5,
       maxResults: 3
     });
-    this.debug.log('指令解析器已初始化');
+
+    // 初始化 AI 指令解析器（如果已配置 API Key）
+    if (AI_CONFIG.enabled && AI_CONFIG.apiKey && AI_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
+      this.aiCommandParser = initAICommandParser(AI_CONFIG.apiKey, {
+        apiEndpoint: AI_CONFIG.apiEndpoint,
+        model: AI_CONFIG.model,
+        maxTokens: AI_CONFIG.maxTokens,
+        temperature: AI_CONFIG.temperature,
+        timeout: AI_CONFIG.timeout,
+        enableCache: AI_CONFIG.enableCache
+      });
+      this.debug.log('AI 指令解析器已初始化（已启用）');
+      this.debug.log(`AI 配置: endpoint=${AI_CONFIG.apiEndpoint}, model=${AI_CONFIG.model}`);
+    } else {
+      this.debug.log('AI 指令解析器未启用（请在 src/config/ai.js 中配置 API Key）');
+      this.debug.log(`AI_CONFIG.enabled=${AI_CONFIG.enabled}, apiKey_set=${!!AI_CONFIG.apiKey}`);
+    }
   }
 
   /**
@@ -337,6 +519,9 @@ class VoiceDrawingApp {
     // 键盘快捷键
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
 
+    // 绑定静态按钮事件
+    this.bindStaticButtonEvents();
+
     this.debug.log('事件绑定完成');
   }
 
@@ -367,7 +552,7 @@ class VoiceDrawingApp {
    * 处理语音识别结果
    * @param {Object} data - 识别结果数据
    */
-  handleVoiceResult(data) {
+  async handleVoiceResult(data) {
     const transcript = data.transcript;
 
     // 添加到日志
@@ -375,8 +560,44 @@ class VoiceDrawingApp {
       this.logPanel.addVoiceLog(transcript);
     }
 
-    // 解析并执行命令
-    const result = this.commandParser.parseAndExecute(transcript);
+    // 第一步：尝试本地指令解析器
+    let result = this.commandParser.parseAndExecute(transcript);
+    this.debug.log(`本地解析结果: success=${result.success}, message=${result.message}`);
+
+    // 如果本地解析失败或置信度低，尝试 AI 解析器
+    if (!result.success && this.aiCommandParser) {
+      try {
+        // 添加 AI 解析提示
+        if (this.logPanel) {
+          this.logPanel.addInfoLog('正在使用 AI 解析...');
+        }
+
+        // 调用 AI 解析器
+        const aiResult = await this.aiCommandParser.parse(transcript);
+        this.debug.log(`AI 解析结果: ${JSON.stringify(aiResult)}`);
+
+        if (aiResult && aiResult.action && aiResult.action !== 'unknown') {
+          // AI 解析成功，执行命令
+          result = this.executeAIParsedCommand(aiResult);
+          this.debug.log(`AI 命令执行结果: ${JSON.stringify(result)}`);
+        } else {
+          this.debug.log('AI 解析未返回有效指令: ' + JSON.stringify(aiResult));
+          if (this.logPanel) {
+            this.logPanel.addWarningLog('AI 未能理解指令');
+          }
+        }
+      } catch (error) {
+        this.debug.error('AI 解析失败', error);
+        if (this.logPanel) {
+          this.logPanel.addErrorLog(`AI 解析失败: ${error.message}`);
+        }
+      }
+    } else if (!this.aiCommandParser) {
+      this.debug.log('AI 解析器未初始化');
+      if (this.logPanel) {
+        this.logPanel.addInfoLog('AI 解析器未启用');
+      }
+    }
 
     // 处理结果
     if (result.success) {
@@ -394,6 +615,77 @@ class VoiceDrawingApp {
       if (this.logPanel) {
         this.logPanel.addWarningLog(`未能识别: "${transcript}"`);
       }
+    }
+  }
+
+  /**
+   * 执行 AI 解析后的命令
+   * @param {Object} aiResult - AI 解析结果
+   * @returns {Object} - 执行结果
+   */
+  executeAIParsedCommand(aiResult) {
+    const { action, params } = aiResult;
+
+    try {
+      switch (action) {
+        case 'setTool':
+          if (params.tool) {
+            this.setTool(params.tool);
+            return { success: true, message: `已切换到${params.tool}工具` };
+          }
+          break;
+        case 'setColor':
+          if (params.color) {
+            this.setColor(params.color);
+            return { success: true, message: `已设置颜色` };
+          }
+          break;
+        case 'setSize':
+          if (params.size) {
+            this.setSize(params.size);
+            return { success: true, message: `已设置大小为${params.size}` };
+          }
+          break;
+        case 'undo':
+          this.undo();
+          return { success: true, message: '已撤销' };
+        case 'redo':
+          this.redo();
+          return { success: true, message: '已重做' };
+        case 'clear':
+          this.clearCanvas();
+          return { success: true, message: '已清空画布' };
+        case 'save':
+          this.saveImage();
+          return { success: true, message: '已保存图片' };
+        case 'move':
+          if (params.position) {
+            this.moveTo(params.position);
+            return { success: true, message: `已移动到${params.position}` };
+          }
+          break;
+        case 'draw':
+          if (params.shape) {
+            this.drawShape(params.shape, params);
+            return { success: true, message: `已在指定位置绘制${params.shape}` };
+          }
+          break;
+        case 'smartDraw':
+          if (params.steps && Array.isArray(params.steps)) {
+            // 获取中心坐标（默认画布中心）
+            const centerX = params.x || 400;
+            const centerY = params.y || 300;
+            this.smartDraw(params.steps, centerX, centerY);
+            const objectName = params.object || '图形';
+            return { success: true, message: `已绘制${objectName}` };
+          }
+          break;
+      }
+
+      return { success: false, message: '未知操作' };
+    } catch (error) {
+      this.debug.error(`执行 AI 命令失败 - action: ${action}, params: ${JSON.stringify(params)}`, error);
+      return { success: false, message: `执行失败: ${error.message}` };
     }
   }
 
@@ -462,7 +754,13 @@ class VoiceDrawingApp {
   startVoice() {
     if (this.voiceRecognizer) {
       this.voiceRecognizer.start();
-      this.controlPanel.setVoiceActive(true);
+
+      // 更新语音状态显示
+      const voiceStatus = document.getElementById('voiceStatus');
+      const statusDot = voiceStatus?.querySelector('.status-dot');
+      const statusText = voiceStatus?.querySelector('.status-text');
+      if (statusDot) statusDot.style.background = '#28a745';
+      if (statusText) statusText.textContent = '语音识别中';
 
       if (this.logPanel) {
         this.logPanel.addInfoLog('语音识别已启动');
@@ -480,7 +778,13 @@ class VoiceDrawingApp {
   stopVoice() {
     if (this.voiceRecognizer) {
       this.voiceRecognizer.stop();
-      this.controlPanel.setVoiceActive(false);
+
+      // 更新语音状态显示
+      const voiceStatus = document.getElementById('voiceStatus');
+      const statusDot = voiceStatus?.querySelector('.status-dot');
+      const statusText = voiceStatus?.querySelector('.status-text');
+      if (statusDot) statusDot.style.background = '#ccc';
+      if (statusText) statusText.textContent = '语音未启动';
 
       if (this.logPanel) {
         this.logPanel.addInfoLog('语音识别已停止');
@@ -570,6 +874,108 @@ class VoiceDrawingApp {
     this.appState.setPosition(position);
 
     this.debug.log(`位置已移动: (${position.x}, ${position.y})`);
+  }
+
+  /**
+   * 绘制指定形状
+   * @param {string} shapeType - 形状类型 (circle, rectangle, triangle, line)
+   * @param {number|Object} params - 尺寸或完整参数对象
+   */
+  drawShape(shapeType, params = {}) {
+    try {
+      this.debug.log(`drawShape 调用 - shapeType: ${shapeType}, params: ${JSON.stringify(params)}`);
+
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
+
+      // 如果 params 是数字，转换为对象格式
+      if (typeof params === 'number') {
+        params = { size: params };
+      }
+
+      this.debug.log(`params 类型: ${typeof params}, 值: ${JSON.stringify(params)}`);
+
+      // 设置位置（默认中心）
+      const x = params.x !== undefined ? params.x : 400;
+      const y = params.y !== undefined ? params.y : 300;
+      this.debug.log(`设置位置: (${x}, ${y})`);
+      this.drawingEngine.setPosition({ x, y });
+
+      // 获取尺寸参数
+      const size = params.size || params.radius || 50;
+      const width = params.width || size;
+      const height = params.height || size;
+
+      // 根据形状类型绘制
+      switch (shapeType) {
+        case 'circle':
+          this.drawingEngine.drawCircleByRadius({ x, y }, size);
+          break;
+        case 'rectangle':
+          this.drawingEngine.drawRectangleBySize({ x, y }, width, height);
+          break;
+        case 'triangle':
+          this.drawingEngine.drawTriangleBySize({ x, y }, size);
+          break;
+        case 'ellipse':
+          this.drawingEngine.drawEllipseBySize({ x, y }, width, height);
+          break;
+        case 'line':
+          if (params.x2 !== undefined && params.y2 !== undefined) {
+            this.drawingEngine.drawLineByPoints({ x, y }, { x: params.x2, y: params.y2 });
+          }
+          break;
+        case 'star':
+          this.drawingEngine.drawStarBySize({ x, y }, size);
+          break;
+        case 'heart':
+          this.drawingEngine.drawHeartBySize({ x, y }, size);
+          break;
+        default:
+          this.drawingEngine.drawShape(shapeType, size);
+      }
+
+      this.debug.log(`已绘制形状: ${shapeType} at (${x}, ${y})`);
+    } catch (error) {
+      this.debug.error(`drawShape 失败: ${error.message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 智能绘图 - 执行 AI 生成的绘图步骤
+   * @param {Array} steps - 绘图步骤数组
+   * @param {number} centerX - 中心 X 坐标（默认 400）
+   * @param {number} centerY - 中心 Y 坐标（默认 300）
+   */
+  smartDraw(steps, centerX = 400, centerY = 300) {
+    try {
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
+      if (!steps || !Array.isArray(steps)) {
+        throw new Error('无效的步骤数组: ' + JSON.stringify(steps));
+      }
+
+      this.debug.log(`开始智能绘图，步骤数: ${steps.length}, 中心: (${centerX}, ${centerY})`);
+      this.drawingEngine.smartDraw(steps, centerX, centerY);
+      this.debug.log(`智能绘图完成，共 ${steps.length} 步`);
+    } catch (error) {
+      this.debug.error(`smartDraw 失败: ${error.message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 切换网格显示
+   * @param {boolean} enabled - 是否显示网格
+   */
+  toggleGrid(enabled) {
+    if (this.drawingEngine) {
+      this.drawingEngine.setGridEnabled(enabled);
+      this.debug.log(`网格显示: ${enabled ? '开启' : '关闭'}`);
+    }
   }
 
   /**
@@ -767,10 +1173,6 @@ class VoiceDrawingApp {
       this.canvasComponent.destroy();
     }
 
-    if (this.controlPanel) {
-      this.controlPanel.destroy();
-    }
-
     if (this.commandHelp) {
       this.commandHelp.destroy();
     }
@@ -792,9 +1194,5 @@ class VoiceDrawingApp {
   }
 }
 
-// 创建并导出默认应用实例
-const app = new VoiceDrawingApp();
-
 // 导出
 export { VoiceDrawingApp };
-export default app;

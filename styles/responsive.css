@@ -1,0 +1,951 @@
+/* 语音控制绘图工具 - 响应式样式文件 */
+
+/* ==================== 断点定义 ==================== */
+/*
+  超小屏幕: < 576px    (手机竖屏)
+  小屏幕:   576px+     (手机横屏)
+  平板:     768px+     (平板竖屏)
+  大平板:   992px+     (平板横屏 / 小笔记本)
+  桌面:     1200px+    (桌面显示器)
+  大桌面:   1400px+    (大桌面显示器)
+*/
+
+/* ==================== 超小屏幕 (手机竖屏) ==================== */
+@media screen and (max-width: 575.98px) {
+
+  /* 容器调整 */
+  .app-container {
+    padding: var(--spacing-sm);
+  }
+
+  /* 标题调整 */
+  .app-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .app-subtitle {
+    font-size: var(--font-size-sm);
+  }
+
+  /* 主布局调整为单列 */
+  .app-main {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  /* 侧边栏调整 */
+  .sidebar {
+    gap: var(--spacing-sm);
+  }
+
+  /* 画布容器 */
+  .canvas-wrapper {
+    padding: var(--spacing-sm);
+  }
+
+  .drawing-canvas {
+    width: 100%;
+    min-height: 250px;
+  }
+
+  /* 状态栏 */
+  .canvas-status {
+    font-size: var(--font-size-xs);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .status-item {
+    font-size: var(--font-size-xs);
+  }
+
+  /* 控制面板 */
+  .control-panel {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .panel-section h3 {
+    font-size: var(--font-size-sm);
+  }
+
+  /* 工具网格 - 2列 */
+  .tool-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  .tool-btn {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+  }
+
+  .tool-icon {
+    font-size: 16px;
+  }
+
+  /* 操作按钮网格 - 单列 */
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-btn {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+  }
+
+  /* 按钮调整 */
+  .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .btn-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-xs);
+  }
+
+  /* 帮助面板 */
+  .command-help-panel {
+    max-height: 300px;
+  }
+
+  .search-container {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .search-input {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs);
+  }
+
+  .category-tabs {
+    padding: var(--spacing-xs);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .category-tab {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+  }
+
+  .command-list {
+    max-height: 200px;
+    padding: var(--spacing-xs);
+  }
+
+  .command-item {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .keyword-tag {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  /* 日志面板 */
+  .log-panel {
+    max-height: 250px;
+  }
+
+  .log-toolbar {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+
+  .filter-btn {
+    padding: 2px var(--spacing-xs);
+    font-size: 10px;
+  }
+
+  .log-list {
+    max-height: 150px;
+    padding: var(--spacing-xs);
+  }
+
+  .log-entry {
+    padding: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    gap: var(--spacing-xs);
+  }
+
+  .log-time {
+    font-size: 9px;
+  }
+
+  /* 语音状态 */
+  .voice-status {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  /* 面板通用 */
+  .panel-header {
+    padding: var(--spacing-sm);
+  }
+
+  .panel-title {
+    font-size: var(--font-size-base);
+  }
+
+  .panel-toggle {
+    padding: 2px;
+    font-size: var(--font-size-xs);
+  }
+
+  .panel-content {
+    max-height: 250px;
+  }
+
+  /* 消息提示 */
+  .toast-container {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    left: var(--spacing-sm);
+  }
+
+  .toast {
+    padding: var(--spacing-sm);
+    max-width: 100%;
+  }
+
+  .toast-icon {
+    font-size: var(--font-size-lg);
+  }
+
+  .toast-title {
+    font-size: var(--font-size-sm);
+  }
+
+  .toast-message {
+    font-size: var(--font-size-xs);
+  }
+
+  /* 模态框 */
+  .modal {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .modal-header {
+    padding: var(--spacing-sm);
+  }
+
+  .modal-title {
+    font-size: var(--font-size-base);
+  }
+
+  .modal-body {
+    padding: var(--spacing-md);
+  }
+
+  .modal-footer {
+    padding: var(--spacing-sm);
+    flex-wrap: wrap;
+  }
+
+  /* 下拉菜单 */
+  .dropdown-menu {
+    min-width: 160px;
+  }
+
+  .dropdown-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  /* 颜色选择器 */
+  .color-picker-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 3px;
+  }
+
+  .color-swatch {
+    aspect-ratio: 1;
+  }
+
+  .color-preset {
+    padding: var(--spacing-xs);
+    gap: var(--spacing-xs);
+  }
+
+  .color-preset-preview {
+    width: 20px;
+    height: 20px;
+  }
+
+  .color-preset-input {
+    font-size: var(--font-size-xs);
+    padding: 2px;
+  }
+
+  /* 滑块 */
+  .slider-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .slider-value {
+    font-size: var(--font-size-xs);
+    min-width: 30px;
+  }
+
+  /* 辅助类响应式 */
+  .d-none-xs {
+    display: none !important;
+  }
+
+  .d-block-xs {
+    display: block !important;
+  }
+
+  .d-flex-xs {
+    display: flex !important;
+  }
+}
+
+/* ==================== 小屏幕 (手机横屏) ==================== */
+@media screen and (min-width: 576px) and (max-width: 767.98px) {
+
+  /* 容器调整 */
+  .app-container {
+    padding: var(--spacing-md);
+  }
+
+  /* 画布尺寸 */
+  .drawing-canvas {
+    min-height: 350px;
+  }
+
+  /* 工具网格 */
+  .tool-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* 帮助面板 */
+  .command-list {
+    max-height: 250px;
+  }
+
+  /* 日志面板 */
+  .log-list {
+    max-height: 180px;
+  }
+
+  /* 辅助类 */
+  .d-none-sm {
+    display: none !important;
+  }
+
+  .d-block-sm {
+    display: block !important;
+  }
+}
+
+/* ==================== 平板竖屏 ==================== */
+@media screen and (min-width: 768px) and (max-width: 991.98px) {
+
+  /* 主布局调整 */
+  .app-main {
+    grid-template-columns: 1fr 260px;
+    gap: var(--spacing-md);
+  }
+
+  /* 画布尺寸 */
+  .drawing-canvas {
+    min-height: 400px;
+  }
+
+  /* 帮助面板 */
+  .command-list {
+    max-height: 280px;
+  }
+
+  /* 日志面板 */
+  .log-list {
+    max-height: 200px;
+  }
+
+  /* 辅助类 */
+  .d-none-md {
+    display: none !important;
+  }
+
+  .d-block-md {
+    display: block !important;
+  }
+}
+
+/* ==================== 平板横屏 / 小笔记本 ==================== */
+@media screen and (min-width: 992px) and (max-width: 1199.98px) {
+
+  /* 容器最大宽度 */
+  .app-container {
+    max-width: 960px;
+  }
+
+  /* 画布尺寸 */
+  .drawing-canvas {
+    min-height: 450px;
+  }
+
+  /* 辅助类 */
+  .d-none-lg {
+    display: none !important;
+  }
+
+  .d-block-lg {
+    display: block !important;
+  }
+}
+
+/* ==================== 桌面显示器 ==================== */
+@media screen and (min-width: 1200px) and (max-width: 1399.98px) {
+
+  /* 容器最大宽度 */
+  .app-container {
+    max-width: 1140px;
+  }
+
+  /* 画布尺寸 */
+  .drawing-canvas {
+    min-height: 500px;
+  }
+
+  /* 侧边栏宽度 */
+  .sidebar {
+    max-width: 320px;
+  }
+
+  /* 辅助类 */
+  .d-none-xl {
+    display: none !important;
+  }
+
+  .d-block-xl {
+    display: block !important;
+  }
+}
+
+/* ==================== 大桌面显示器 ==================== */
+@media screen and (min-width: 1400px) {
+
+  /* 容器最大宽度 */
+  .app-container {
+    max-width: 1320px;
+  }
+
+  /* 画布尺寸 */
+  .drawing-canvas {
+    min-height: 550px;
+  }
+
+  /* 侧边栏宽度 */
+  .sidebar {
+    max-width: 350px;
+  }
+
+  /* 更大的字体 */
+  .app-title {
+    font-size: var(--font-size-xxl);
+  }
+
+  /* 帮助面板 */
+  .command-list {
+    max-height: 350px;
+  }
+
+  /* 日志面板 */
+  .log-list {
+    max-height: 250px;
+  }
+
+  /* 辅助类 */
+  .d-none-xxl {
+    display: none !important;
+  }
+
+  .d-block-xxl {
+    display: block !important;
+  }
+}
+
+/* ==================== 横屏模式适配 ==================== */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+
+  /* 高度很小的横屏 */
+  .app-header {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .app-title {
+    font-size: var(--font-size-lg);
+    margin-bottom: 0;
+  }
+
+  .app-subtitle {
+    display: none;
+  }
+
+  .app-main {
+    grid-template-columns: 1fr 200px;
+    gap: var(--spacing-sm);
+  }
+
+  .drawing-canvas {
+    min-height: 180px;
+  }
+
+  .panel-content {
+    max-height: 150px;
+  }
+
+  .command-list,
+  .log-list {
+    max-height: 100px;
+  }
+
+  .sidebar {
+    gap: var(--spacing-sm);
+  }
+}
+
+/* ==================== 高分辨率屏幕 ==================== */
+@media screen and (-webkit-min-device-pixel-ratio: 2),
+screen and (min-resolution: 192dpi) {
+
+  /* 字体平滑 */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 画布清晰 */
+  .drawing-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* ==================== 深色模式支持 (可选) ==================== */
+@media (prefers-color-scheme: dark) {
+  /* 
+  如果需要深色模式，可以在这里添加样式
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+  }
+  */
+}
+
+/* ==================== 减少动画偏好 ==================== */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-pulse,
+  .animate-fade-in,
+  .animate-slide-down,
+  .animate-spin {
+    animation: none !important;
+  }
+
+  .loading-spinner {
+    animation: none !important;
+    border-top-color: var(--primary-color);
+  }
+
+  .loading-dot {
+    animation: none !important;
+  }
+
+  .voice-status.active .status-dot {
+    animation: none !important;
+    background: var(--success-color);
+  }
+
+  .skeleton {
+    animation: none !important;
+    background: var(--gray-200);
+  }
+}
+
+/* ==================== 打印样式 ==================== */
+@media print {
+
+  /* 隐藏所有非画布元素 */
+  .app-header,
+  .sidebar,
+  .panel-header,
+  .panel-toggle,
+  .canvas-status,
+  .voice-status,
+  .btn,
+  .control-panel,
+  .command-help-panel,
+  .log-panel {
+    display: none !important;
+  }
+
+  /* 画布调整 */
+  .app-container {
+    max-width: none;
+    padding: 0;
+  }
+
+  .app-main {
+    display: block;
+  }
+
+  .main-content {
+    display: block;
+  }
+
+  .content-section {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .canvas-wrapper {
+    padding: 0;
+  }
+
+  .drawing-canvas {
+    border: 2px solid #000;
+    page-break-inside: avoid;
+  }
+
+  /* 文字颜色 */
+  body {
+    background: white;
+    color: black;
+  }
+
+  /* 链接下划线 */
+  a {
+    text-decoration: underline;
+  }
+}
+
+/* ==================== 触摸设备优化 ==================== */
+@media (hover: none) and (pointer: coarse) {
+  /* 触摸设备 */
+
+  /* 按钮增大触摸区域 */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .tool-btn {
+    min-height: 50px;
+  }
+
+  .action-btn {
+    min-height: 44px;
+  }
+
+  /* 移除hover效果 */
+  .btn:hover,
+  .tool-btn:hover,
+  .action-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* 添加active状态 */
+  .btn:active,
+  .tool-btn:active,
+  .action-btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  /* 触摸友好的下拉菜单 */
+  .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* 触摸滚动优化 */
+  .command-list,
+  .log-list,
+  .panel-content {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* 颜色选择器触摸友好 */
+  .color-swatch {
+    min-height: 36px;
+  }
+
+  /* 滑块触摸友好 */
+  .slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 状态点指示器 */
+  .status-dot {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ==================== 鼠标设备优化 ==================== */
+@media (hover: hover) and (pointer: fine) {
+  /* 精确指针设备（鼠标）*/
+
+  /* 悬停效果 */
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tool-btn:hover {
+    background: var(--gray-200);
+  }
+
+  .color-swatch:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* 下拉菜单悬停 */
+  .dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 视口高度适配 (移动端浏览器) ==================== */
+@media screen and (max-height: 600px) {
+  .app-header {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .app-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .app-subtitle {
+    display: none;
+  }
+
+  .app-main {
+    gap: var(--spacing-sm);
+  }
+
+  .panel-content {
+    max-height: 200px;
+  }
+}
+
+@media screen and (min-height: 900px) {
+  .app-main {
+    grid-template-rows: 1fr auto;
+  }
+
+  .sidebar {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+/* ==================== 安全区域适配 (iPhone X 等刘海屏) ==================== */
+@supports (padding: env(safe-area-inset-top)) {
+  .app-container {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app-header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .toast-container {
+    top: calc(var(--spacing-lg) + env(safe-area-inset-top));
+    right: calc(var(--spacing-lg) + env(safe-area-inset-right));
+  }
+}
+
+/* ==================== 辅助功能 - 焦点可见 ==================== */
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000;
+    --shadow-sm: 0 0 0 1px #000;
+    --shadow-md: 0 0 0 2px #000;
+  }
+
+  .btn {
+    border: 2px solid currentColor;
+  }
+
+  .tool-btn,
+  .action-btn {
+    border: 2px solid var(--gray-600);
+  }
+
+  .tool-btn.active,
+  .action-btn.active {
+    border-color: var(--primary-color);
+    outline: 3px solid var(--primary-color);
+  }
+}
+
+/* ==================== 通用响应式辅助类 ==================== */
+/* 隐藏类 */
+@media (max-width: 575.98px) {
+  .hide-xs {
+    display: none !important;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .hide-sm {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .hide-md {
+    display: none !important;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .hide-lg {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  .hide-xl {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .hide-xxl {
+    display: none !important;
+  }
+}
+
+/* 显示类 */
+@media (max-width: 575.98px) {
+  .show-xs {
+    display: block !important;
+  }
+}
+
+@media (min-width: 576px) {
+  .show-sm {
+    display: block !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .show-md {
+    display: block !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .show-lg {
+    display: block !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .show-xl {
+    display: block !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .show-xxl {
+    display: block !important;
+  }
+}
+
+/* 文本响应式 */
+@media (max-width: 575.98px) {
+  .text-xs-center {
+    text-align: center;
+  }
+
+  .text-xs-left {
+    text-align: left;
+  }
+
+  .text-xs-right {
+    text-align: right;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .text-sm-center {
+    text-align: center;
+  }
+
+  .text-sm-left {
+    text-align: left;
+  }
+
+  .text-sm-right {
+    text-align: right;
+  }
+}
+
+/* 网格响应式 */
+@media (max-width: 575.98px) {
+  .grid-xs-1 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .grid-xs-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .grid-sm-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-sm-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .grid-md-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid-md-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-md-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="纯语音控制的绘图工具，通过语音指令完成绘图创作">
+  <meta name="theme-color" content="#007bff">
+  <title>语音控制绘图工具</title>
+
+  <!-- 样式文件 -->
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/responsive.css">
+</head>
+
+<body>
+  <!-- 应用容器 -->
+  <div id="app" class="app-container">
+
+    <!-- 头部区域 -->
+    <header class="app-header">
+      <h1 class="app-title">🎤 语音控制绘图工具</h1>
+      <p class="app-subtitle">通过语音指令完成绘图创作 - 无需鼠标或键盘</p>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="app-main">
+
+      <!-- 左侧主区域 -->
+      <div class="main-content">
+
+        <!-- 画布区域 -->
+        <section class="content-section canvas-section">
+          <div id="canvasContainer" class="canvas-wrapper">
+            <!-- 画布由 CanvasComponent 动态创建 -->
+          </div>
+          <div class="canvas-status">
+            <div class="status-item">
+              <span class="status-label">画布:</span>
+              <span id="canvasSize" class="status-value">800×600</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">工具:</span>
+              <span id="currentTool" class="status-value">画笔</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">颜色:</span>
+              <span id="currentColor" class="color-preview" style="background-color: #000000;"></span>
+              <span id="currentColorHex" class="status-value">#000000</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">大小:</span>
+              <span id="currentSize" class="status-value">5px</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">填充:</span>
+              <span id="fillMode" class="status-value">描边</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- 侧边栏 -->
+      <aside class="sidebar">
+
+        <!-- 控制面板 -->
+        <section class="panel control-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">🎛️ 控制面板</h2>
+          </div>
+          <div class="panel-content">
+
+            <!-- 语音控制 -->
+            <div class="panel-section">
+              <h3>语音控制</h3>
+              <div class="voice-status" id="voiceStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">语音未启动</span>
+              </div>
+              <div class="btn-grid">
+                <button id="startVoiceBtn" class="btn btn-success voice-btn">
+                  🎤 启动语音
+                </button>
+                <button id="stopVoiceBtn" class="btn btn-danger voice-btn" disabled>
+                  ⏹️ 停止语音
+                </button>
+              </div>
+            </div>
+
+            <!-- 工具选择 -->
+            <div class="panel-section">
+              <h3>绘图工具</h3>
+              <div class="tool-grid">
+                <button class="tool-btn active" data-tool="brush">
+                  <span class="tool-icon">🖌️</span>
+                  <span>画笔</span>
+                </button>
+                <button class="tool-btn" data-tool="line">
+                  <span class="tool-icon">📏</span>
+                  <span>直线</span>
+                </button>
+                <button class="tool-btn" data-tool="rectangle">
+                  <span class="tool-icon">⬜</span>
+                  <span>矩形</span>
+                </button>
+                <button class="tool-btn" data-tool="circle">
+                  <span class="tool-icon">⭕</span>
+                  <span>圆形</span>
+                </button>
+                <button class="tool-btn" data-tool="triangle">
+                  <span class="tool-icon">🔺</span>
+                  <span>三角形</span>
+                </button>
+                <button class="tool-btn" data-tool="eraser">
+                  <span class="tool-icon">🧹</span>
+                  <span>橡皮</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 颜色选择 -->
+            <div class="panel-section">
+              <h3>颜色</h3>
+              <!-- 自定义调色盘 -->
+              <div class="color-picker-wrapper">
+                <input type="color" id="colorPicker" class="color-picker-input" value="#000000">
+                <span id="colorPickerValue" class="color-picker-value">#000000</span>
+              </div>
+              <!-- 预设颜色 -->
+              <div class="color-picker-grid">
+                <button class="color-swatch selected" data-color="#000000" style="background-color: #000000;"
+                  title="黑色"></button>
+                <button class="color-swatch" data-color="#ffffff"
+                  style="background-color: #ffffff; border: 1px solid #ccc;" title="白色"></button>
+                <button class="color-swatch" data-color="#ff0000" style="background-color: #ff0000;"
+                  title="红色"></button>
+                <button class="color-swatch" data-color="#00ff00" style="background-color: #00ff00;"
+                  title="绿色"></button>
+                <button class="color-swatch" data-color="#0000ff" style="background-color: #0000ff;"
+                  title="蓝色"></button>
+                <button class="color-swatch" data-color="#ffff00" style="background-color: #ffff00;"
+                  title="黄色"></button>
+                <button class="color-swatch" data-color="#ff00ff" style="background-color: #ff00ff;"
+                  title="品红"></button>
+                <button class="color-swatch" data-color="#00ffff" style="background-color: #00ffff;"
+                  title="青色"></button>
+                <button class="color-swatch" data-color="#ff8800" style="background-color: #ff8800;"
+                  title="橙色"></button>
+                <button class="color-swatch" data-color="#8800ff" style="background-color: #8800ff;"
+                  title="紫色"></button>
+                <button class="color-swatch" data-color="#ff0088" style="background-color: #ff0088;"
+                  title="粉色"></button>
+                <button class="color-swatch" data-color="#888888" style="background-color: #888888;"
+                  title="灰色"></button>
+              </div>
+            </div>
+
+            <!-- 大小调节 -->
+            <div class="panel-section">
+              <h3>大小</h3>
+              <div class="slider-wrapper">
+                <div class="slider-header">
+                  <span class="slider-label">笔刷大小</span>
+                  <span id="sizeValue" class="slider-value">5px</span>
+                </div>
+                <input type="range" id="sizeSlider" class="size-slider" min="1" max="20" value="5">
+                <div class="slider-marks">
+                  <span class="slider-mark">1</span>
+                  <span class="slider-mark">10</span>
+                  <span class="slider-mark">20</span>
+                </div>
+              </div>
+              <div class="btn-grid mt-2">
+                <button id="decreaseSizeBtn" class="btn btn-outline">➖ 变细</button>
+                <button id="increaseSizeBtn" class="btn btn-outline">➕ 加粗</button>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="panel-section">
+              <h3>操作</h3>
+              <div class="action-grid">
+                <button id="undoBtn" class="action-btn undo">↩️ 撤销</button>
+                <button id="redoBtn" class="action-btn redo">↪️ 重做</button>
+                <button id="clearBtn" class="action-btn clear">🗑️ 清空</button>
+                <button id="saveBtn" class="action-btn save">💾 保存</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 指令帮助面板 -->
+        <section class="panel command-help-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">📋 指令帮助</h2>
+            <button class="panel-toggle">▼</button>
+          </div>
+          <div class="panel-content">
+            <div class="help-content">
+              <div class="search-container">
+                <input type="text" class="search-input" id="commandSearch" placeholder="搜索指令...">
+              </div>
+              <div class="category-tabs">
+                <button class="category-tab active" data-category="all">全部</button>
+                <button class="category-tab" data-category="control">控制</button>
+                <button class="category-tab" data-category="tool">工具</button>
+                <button class="category-tab" data-category="color">颜色</button>
+                <button class="category-tab" data-category="size">大小</button>
+                <button class="category-tab" data-category="position">位置</button>
+                <button class="category-tab" data-category="drawing">绘图</button>
+              </div>
+              <div id="commandList" class="command-list">
+                <!-- 指令列表由 JS 动态生成 -->
+                <div class="empty-state">
+                  <span class="empty-icon">📋</span>
+                  <span class="empty-title">加载中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+    </main>
+
+    <!-- 提示框容器 -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- 保存图片用的临时链接 -->
+    <a id="saveLink" style="display: none;"></a>
+
+  </div>
+
+  <!-- 应用入口脚本 -->
+  <script type="module" src="src/app.js"></script>
+
+  <!-- 初始化应用 -->
+  <script>
+    // 等待 DOM 加载完成
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log('页面加载完成，正在初始化应用...');
+
+      try {
+        // 动态导入应用
+        const { VoiceDrawingApp } = await import('./src/app.js');
+
+        // 创建应用实例
+        const app = new VoiceDrawingApp({
+          containerId: 'app',
+          canvasId: 'drawingCanvas',
+          autoInit: true,
+          enableVoice: true,
+          enableSpeechFeedback: true
+        });
+
+        // 暴露到全局，方便调试
+        window.voiceDrawingApp = app;
+
+        console.log('应用初始化成功！');
+
+      } catch (error) {
+        console.error('应用初始化失败:', error);
+
+        // 显示错误提示
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'toast error';
+        errorMsg.innerHTML = `
+          <span class="toast-icon">❌</span>
+          <div class="toast-content">
+            <div class="toast-title">初始化失败</div>
+            <div class="toast-message">${error.message}</div>
+          </div>
+        `;
+
+        const container = document.getElementById('toastContainer');
+        if (container) {
+          container.appendChild(errorMsg);
+          setTimeout(() => errorMsg.remove(), 5000);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,6 +1,6 @@
 // 语音控制绘图工具 - 绘图引擎
 
-import { CANVAS_CONFIG, TOOLS, BRUSH_CONFIG, DRAWING_MODES } from '../utils/constants.js';
+import { CANVAS_CONFIG, TOOLS, BRUSH_CONFIG, DRAWING_MODE } from '../utils/constants.js';
 import { BoundaryHelper, ValidationHelper, MathHelper } from '../utils/helpers.js';
 
 /**
@@ -52,6 +52,21 @@ export class DrawingEngine {
     this.history = [];
     this.historyIndex = -1;
 
+    // 调试工具
+    this.debug = {
+      log: (msg) => console.log(`[DrawingEngine] ${msg}`),
+      error: (msg, err) => console.error(`[DrawingEngine] ${msg}`, err)
+    };
+
+    // 网格配置（仅边框坐标标签）
+    this.gridConfig = {
+      enabled: true,
+      majorSpacing: 100,
+      showLabels: true,
+      labelColor: '#888888',
+      labelFont: '10px Arial'
+    };
+
     // 初始化
     this.initCanvas();
     this.setupEventListeners();
@@ -74,7 +89,10 @@ export class DrawingEngine {
     // 填充背景
     this.fillBackground();
 
-    // 保存初始状态
+    // 绘制坐标网格
+    this.drawGrid();
+
+    // 保存初始状态（不含网格）
     this.saveToHistory();
   }
 
@@ -128,6 +146,86 @@ export class DrawingEngine {
   fillBackground(color = null) {
     this.ctx.fillStyle = color || this.config.backgroundColor;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  /**
+   * 绘制坐标标签（不保存到历史记录）
+   */
+  drawGrid() {
+    if (!this.gridConfig.enabled) return;
+
+    const { width, height } = this.config;
+    const { majorSpacing, showLabels, labelColor, labelFont } = this.gridConfig;
+
+    // 保存当前绘图状态
+    this.ctx.save();
+
+    // 只在边框显示坐标标签（无网格线）
+    if (showLabels) {
+      this.ctx.fillStyle = labelColor;
+      this.ctx.font = labelFont;
+
+      // 顶部边框坐标（X轴）
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'top';
+      for (let x = 0; x <= width; x += majorSpacing) {
+        this.ctx.fillText(x.toString(), x, 2);
+      }
+
+      // 左侧边框坐标（Y轴）
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'middle';
+      for (let y = 0; y <= height; y += majorSpacing) {
+        this.ctx.fillText(y.toString(), 2, y);
+      }
+
+      // 右侧边框坐标（Y轴）
+      this.ctx.textAlign = 'right';
+      for (let y = 0; y <= height; y += majorSpacing) {
+        this.ctx.fillText(y.toString(), width - 2, y);
+      }
+
+      // 底部边框坐标（X轴）
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'bottom';
+      for (let x = 0; x <= width; x += majorSpacing) {
+        this.ctx.fillText(x.toString(), x, height - 2);
+      }
+    }
+
+    // 恢复绘图状态
+    this.ctx.restore();
+  }
+
+  /**
+   * 显示/隐藏网格
+   * @param {boolean} enabled - 是否显示
+   */
+  setGridEnabled(enabled) {
+    this.gridConfig.enabled = enabled;
+
+    // 先恢复历史状态（清除网格）
+    if (this.historyIndex >= 0 && this.history[this.historyIndex]) {
+      this.ctx.putImageData(this.history[this.historyIndex], 0, 0);
+    }
+
+    // 如果启用网格，则绘制网格
+    if (enabled) {
+      this.drawGrid();
+    }
+  }
+
+  /**
+   * 重绘画布（包含网格）
+   */
+  redrawWithGrid() {
+    // 先恢复历史状态
+    if (this.historyIndex >= 0 && this.history[this.historyIndex]) {
+      this.ctx.putImageData(this.history[this.historyIndex], 0, 0);
+    }
+
+    // 然后绘制网格（叠加在上面）
+    this.drawGrid();
   }
 
   /**
@@ -426,8 +524,24 @@ export class DrawingEngine {
    * @param {Object} position - 位置 {x, y}
    */
   setPosition(position) {
-    if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+    console.log('[DEBUG] setPosition 调用:', JSON.stringify(position));
+
+    if (!position) {
+      console.error('[DEBUG] setPosition 失败: position 是 undefined');
+      return;
+    }
+
+    if (typeof position.x !== 'number' || typeof position.y !== 'number') {
+      console.error('[DEBUG] setPosition 失败: position.x 或 position.y 不是数字:', position);
+      return;
+    }
+
+    try {
       this.currentState.position = BoundaryHelper.clampPoint(position);
+      console.log('[DEBUG] setPosition 成功:', this.currentState.position);
+    } catch (error) {
+      console.error('[DEBUG] setPosition clampPoint 失败:', error.message);
+      throw error;
     }
   }
 
@@ -533,6 +647,137 @@ export class DrawingEngine {
   }
 
   /**
+   * 绘制三角形（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawTriangleBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const height = size;
+
+    // 三角形顶点：顶点在上方，底边在下方
+    const x1 = x;
+    const y1 = y - height / 2;
+    const x2 = x - size / 2;
+    const y2 = y + height / 2;
+    const x3 = x + size / 2;
+    const y3 = y + height / 2;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x1, y1);
+    this.ctx.lineTo(x2, y2);
+    this.ctx.lineTo(x3, y3);
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制椭圆（使用位置和宽高）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} width - 宽度
+   * @param {number} height - 高度
+   */
+  drawEllipseBySize(position, width, height) {
+    const x = position.x;
+    const y = position.y;
+
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, width / 2, height / 2, 0, 0, Math.PI * 2);
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制星星（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawStarBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const outerRadius = size / 2;
+    const innerRadius = outerRadius * 0.4;
+    const spikes = 5;
+
+    this.ctx.beginPath();
+
+    for (let i = 0; i < spikes * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (Math.PI / spikes) * i - Math.PI / 2;
+      const px = x + Math.cos(angle) * radius;
+      const py = y + Math.sin(angle) * radius;
+
+      if (i === 0) {
+        this.ctx.moveTo(px, py);
+      } else {
+        this.ctx.lineTo(px, py);
+      }
+    }
+
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制心形（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawHeartBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const scale = size / 30;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y + scale * 10);
+
+    // 左半边曲线
+    this.ctx.bezierCurveTo(
+      x - scale * 15, y - scale * 10,
+      x - scale * 30, y + scale * 15,
+      x, y + scale * 30
+    );
+
+    // 右半边曲线
+    this.ctx.bezierCurveTo(
+      x + scale * 30, y + scale * 15,
+      x + scale * 15, y - scale * 10,
+      x, y + scale * 10
+    );
+
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
    * 绘制直线（使用两个点）
    * @param {Object} from - 起点
    * @param {Object} to - 终点
@@ -578,6 +823,8 @@ export class DrawingEngine {
       this.historyIndex--;
       const imageData = this.history[this.historyIndex];
       this.ctx.putImageData(imageData, 0, 0);
+      // 撤销后重新绘制网格（叠加显示）
+      this.drawGrid();
       return true;
     }
     return false;
@@ -592,6 +839,8 @@ export class DrawingEngine {
       this.historyIndex++;
       const imageData = this.history[this.historyIndex];
       this.ctx.putImageData(imageData, 0, 0);
+      // 重做后重新绘制网格（叠加显示）
+      this.drawGrid();
       return true;
     }
     return false;
@@ -603,7 +852,234 @@ export class DrawingEngine {
    */
   clear(color = null) {
     this.fillBackground(color);
+    this.drawGrid();
     this.saveToHistory();
+  }
+
+  /**
+   * 智能绘图 - 执行 AI 生成的绘图步骤序列
+   * @param {Array} steps - 绘图步骤数组
+   */
+  smartDraw(steps, centerX = 400, centerY = 300) {
+    if (!steps || !Array.isArray(steps)) {
+      console.warn('smartDraw: 无效的步骤数组');
+      return;
+    }
+
+    console.log(`[DEBUG] smartDraw 开始，中心坐标: (${centerX}, ${centerY})`);
+
+    // 保存当前状态
+    const savedState = {
+      color: this.currentState.color,
+      size: this.currentState.size,
+      isFill: this.currentState.isFill
+    };
+
+    // 执行每个绘图步骤
+    steps.forEach((step, index) => {
+      this.debug.log(`执行绘图步骤 ${index + 1}: ${step.type}`);
+
+      // 将相对坐标转换为绝对坐标
+      const absoluteStep = { ...step };
+      if (step.x !== undefined) {
+        absoluteStep.x = centerX + step.x;
+      }
+      if (step.y !== undefined) {
+        absoluteStep.y = centerY + step.y;
+      }
+      if (step.x1 !== undefined) {
+        absoluteStep.x1 = centerX + step.x1;
+      }
+      if (step.y1 !== undefined) {
+        absoluteStep.y1 = centerY + step.y1;
+      }
+      if (step.x2 !== undefined) {
+        absoluteStep.x2 = centerX + step.x2;
+      }
+      if (step.y2 !== undefined) {
+        absoluteStep.y2 = centerY + step.y2;
+      }
+
+      console.log(`[DEBUG] 步骤 ${index + 1}: 相对坐标 (${step.x}, ${step.y}) -> 绝对坐标 (${absoluteStep.x}, ${absoluteStep.y})`);
+
+      // 设置颜色
+      if (absoluteStep.color) {
+        this.ctx.fillStyle = absoluteStep.color;
+        this.ctx.strokeStyle = absoluteStep.color;
+      }
+
+      // 设置线宽
+      if (absoluteStep.lineWidth || absoluteStep.size) {
+        this.ctx.lineWidth = absoluteStep.lineWidth || absoluteStep.size || 2;
+      }
+
+      // 根据类型绘制
+      switch (absoluteStep.type) {
+        case 'circle':
+          this.drawSmartCircle(absoluteStep);
+          break;
+        case 'ellipse':
+          this.drawSmartEllipse(absoluteStep);
+          break;
+        case 'rectangle':
+          this.drawSmartRectangle(absoluteStep);
+          break;
+        case 'triangle':
+          this.drawSmartTriangle(absoluteStep);
+          break;
+        case 'line':
+          this.drawSmartLine(absoluteStep);
+          break;
+        case 'arc':
+          this.drawSmartArc(absoluteStep);
+          break;
+        case 'path':
+          this.drawSmartPath(absoluteStep, centerX, centerY);
+          break;
+        default:
+          console.warn('未知的绘图类型:', absoluteStep.type);
+      }
+    });
+
+    // 恢复状态
+    this.currentState.color = savedState.color;
+    this.currentState.size = savedState.size;
+    this.currentState.isFill = savedState.isFill;
+    this.ctx.fillStyle = savedState.color;
+    this.ctx.strokeStyle = savedState.color;
+    this.ctx.lineWidth = savedState.size;
+
+    // 绘制网格（叠加显示）
+    this.drawGrid();
+
+    // 保存到历史
+    this.saveToHistory();
+    this.debug.log('智能绘图完成');
+  }
+
+  /**
+   * 绘制智能圆形
+   */
+  drawSmartCircle(step) {
+    const { x, y, radius, filled } = step;
+    const r = radius || step.size || 50;
+
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, 0, Math.PI * 2);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能椭圆
+   */
+  drawSmartEllipse(step) {
+    const { x, y, width, height, filled } = step;
+    const w = width || 50;
+    const h = height || 80;
+
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能矩形
+   */
+  drawSmartRectangle(step) {
+    const { x, y, width, height, filled } = step;
+    const w = width || 100;
+    const h = height || 80;
+
+    this.ctx.beginPath();
+    this.ctx.rect(x - w / 2, y - h / 2, w, h);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能三角形
+   */
+  drawSmartTriangle(step) {
+    const { x, y, size, filled } = step;
+    const s = size || 100;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - s / 2);
+    this.ctx.lineTo(x - s / 2, y + s / 2);
+    this.ctx.lineTo(x + s / 2, y + s / 2);
+    this.ctx.closePath();
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能直线
+   */
+  drawSmartLine(step) {
+    const { x1, y1, x2, y2 } = step;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x1, y1);
+    this.ctx.lineTo(x2, y2);
+    this.ctx.stroke();
+  }
+
+  /**
+   * 绘制智能弧线
+   */
+  drawSmartArc(step) {
+    const { x, y, radius, startAngle, endAngle } = step;
+    const r = radius || 30;
+    const start = (startAngle || 0) * Math.PI / 180;
+    const end = (endAngle || 180) * Math.PI / 180;
+
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, start, end);
+    this.ctx.stroke();
+  }
+
+  /**
+   * 绘制智能路径
+   */
+  drawSmartPath(step, centerX = 400, centerY = 300) {
+    const { points, filled } = step;
+
+    if (!points || points.length < 2) return;
+
+    // 将相对坐标转换为绝对坐标
+    const absolutePoints = points.map(p => [centerX + p[0], centerY + p[1]]);
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(absolutePoints[0][0], absolutePoints[0][1]);
+
+    for (let i = 1; i < absolutePoints.length; i++) {
+      this.ctx.lineTo(absolutePoints[i][0], absolutePoints[i][1]);
+    }
+
+    if (filled) {
+      this.ctx.closePath();
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
   }
 
   /**
