@@ -2,6 +2,7 @@
 
 import { VoiceRecognizer } from './core/VoiceRecognizer.js';
 import { CommandParser } from './core/CommandParser.js';
+import { AICommandParser, initAICommandParser } from './core/AICommandParser.js';
 import { DrawingEngine } from './core/DrawingEngine.js';
 import { CanvasComponent } from './components/Canvas.js';
 import { CommandHelp } from './components/CommandHelp.js';
@@ -9,6 +10,7 @@ import { LogPanel } from './components/LogPanel.js';
 import { AppState } from './state/AppState.js';
 import { SpeechFeedback } from './utils/speechFeedback.js';
 import { DebugHelper } from './utils/helpers.js';
+import { AI_CONFIG } from './config/ai.js';
 
 /**
  * 应用主类
@@ -51,6 +53,9 @@ class VoiceDrawingApp {
 
     // 语音反馈
     this.speechFeedback = null;
+
+    // AI 指令解析器
+    this.aiCommandParser = null;
 
     // 是否已初始化
     this.initialized = false;
@@ -328,7 +333,20 @@ class VoiceDrawingApp {
       minMatchScore: 0.5,
       maxResults: 3
     });
-    this.debug.log('指令解析器已初始化');
+
+    // 初始化 AI 指令解析器（如果已配置 API Key）
+    if (AI_CONFIG.enabled && AI_CONFIG.apiKey && AI_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
+      this.aiCommandParser = initAICommandParser(AI_CONFIG.apiKey, {
+        model: AI_CONFIG.model,
+        maxTokens: AI_CONFIG.maxTokens,
+        temperature: AI_CONFIG.temperature,
+        timeout: AI_CONFIG.timeout,
+        enableCache: AI_CONFIG.enableCache
+      });
+      this.debug.log('AI 指令解析器已初始化（已启用）');
+    } else {
+      this.debug.log('AI 指令解析器未启用（请在 src/config/ai.js 中配置 API Key）');
+    }
   }
 
   /**
@@ -495,7 +513,7 @@ class VoiceDrawingApp {
    * 处理语音识别结果
    * @param {Object} data - 识别结果数据
    */
-  handleVoiceResult(data) {
+  async handleVoiceResult(data) {
     const transcript = data.transcript;
 
     // 添加到日志
@@ -503,8 +521,28 @@ class VoiceDrawingApp {
       this.logPanel.addVoiceLog(transcript);
     }
 
-    // 解析并执行命令
-    const result = this.commandParser.parseAndExecute(transcript);
+    // 第一步：尝试本地指令解析器
+    let result = this.commandParser.parseAndExecute(transcript);
+
+    // 如果本地解析失败或置信度低，尝试 AI 解析器
+    if (!result.success && this.aiCommandParser) {
+      try {
+        // 添加 AI 解析提示
+        if (this.logPanel) {
+          this.logPanel.addInfoLog('正在使用 AI 解析...');
+        }
+
+        // 调用 AI 解析器
+        const aiResult = await this.aiCommandParser.parse(transcript);
+
+        if (aiResult && aiResult.action && aiResult.action !== 'unknown') {
+          // AI 解析成功，执行命令
+          result = this.executeAIParsedCommand(aiResult);
+        }
+      } catch (error) {
+        this.debug.error('AI 解析失败', error);
+      }
+    }
 
     // 处理结果
     if (result.success) {
@@ -522,6 +560,67 @@ class VoiceDrawingApp {
       if (this.logPanel) {
         this.logPanel.addWarningLog(`未能识别: "${transcript}"`);
       }
+    }
+  }
+
+  /**
+   * 执行 AI 解析后的命令
+   * @param {Object} aiResult - AI 解析结果
+   * @returns {Object} - 执行结果
+   */
+  executeAIParsedCommand(aiResult) {
+    const { action, params } = aiResult;
+
+    try {
+      switch (action) {
+        case 'setTool':
+          if (params.tool) {
+            this.setTool(params.tool);
+            return { success: true, message: `已切换到${params.tool}工具` };
+          }
+          break;
+        case 'setColor':
+          if (params.color) {
+            this.setColor(params.color);
+            return { success: true, message: `已设置颜色` };
+          }
+          break;
+        case 'setSize':
+          if (params.size) {
+            this.setSize(params.size);
+            return { success: true, message: `已设置大小为${params.size}` };
+          }
+          break;
+        case 'undo':
+          this.undo();
+          return { success: true, message: '已撤销' };
+        case 'redo':
+          this.redo();
+          return { success: true, message: '已重做' };
+        case 'clear':
+          this.clearCanvas();
+          return { success: true, message: '已清空画布' };
+        case 'save':
+          this.saveImage();
+          return { success: true, message: '已保存图片' };
+        case 'move':
+          if (params.position) {
+            this.moveTo(params.position);
+            return { success: true, message: `已移动到${params.position}` };
+          }
+          break;
+        case 'draw':
+          if (params.shape) {
+            this.drawShape(params.shape);
+            return { success: true, message: `已绘制${params.shape}` };
+          }
+          break;
+      }
+
+      return { success: false, message: '未知操作' };
+    } catch (error) {
+      this.debug.error('执行 AI 命令失败', error);
+      return { success: false, message: '执行失败' };
     }
   }
 
@@ -710,6 +809,24 @@ class VoiceDrawingApp {
     this.appState.setPosition(position);
 
     this.debug.log(`位置已移动: (${position.x}, ${position.y})`);
+  }
+
+  /**
+   * 绘制指定形状
+   * @param {string} shapeType - 形状类型 (circle, rectangle, triangle, line)
+   * @param {number} size - 尺寸
+   */
+  drawShape(shapeType, size = 50) {
+    if (this.drawingEngine) {
+      // 先设置位置到中心
+      const centerPos = { x: 400, y: 300 };
+      this.drawingEngine.setPosition(centerPos);
+
+      // 绘制形状
+      this.drawingEngine.drawShape(shapeType, size);
+
+      this.debug.log(`已绘制形状: ${shapeType}`);
+    }
   }
 
   /**
