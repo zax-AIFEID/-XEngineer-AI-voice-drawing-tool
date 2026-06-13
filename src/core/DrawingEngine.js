@@ -1,6 +1,6 @@
 // 语音控制绘图工具 - 绘图引擎
 
-import { CANVAS_CONFIG, TOOLS, BRUSH_CONFIG, DRAWING_MODES } from '../utils/constants.js';
+import { CANVAS_CONFIG, TOOLS, BRUSH_CONFIG, DRAWING_MODE } from '../utils/constants.js';
 import { BoundaryHelper, ValidationHelper, MathHelper } from '../utils/helpers.js';
 
 /**

@@ -81,11 +81,11 @@ class VoiceDrawingApp {
       // 3. 初始化日志面板
       this.initLogPanel();
 
-      // 4. 初始化绘图引擎
-      this.initDrawingEngine();
-
-      // 5. 初始化UI组件
+      // 4. 初始化UI组件
       this.initUIComponents();
+
+      // 5. 初始化绘图引擎
+      this.initDrawingEngine();
 
       // 6. 初始化指令解析器
       this.initCommandParser();
@@ -157,14 +157,17 @@ class VoiceDrawingApp {
    * 初始化绘图引擎
    */
   initDrawingEngine() {
-    // 创建隐藏的canvas元素
-    const canvasContainer = document.createElement('div');
-    canvasContainer.id = 'canvasContainer';
-    canvasContainer.style.cssText = 'display: none;';
-    canvasContainer.innerHTML = `<canvas id="${this.options.canvasId}"></canvas>`;
-    document.getElementById(this.options.containerId).appendChild(canvasContainer);
+    // 从 CanvasComponent 获取 canvas 元素
+    const canvas = this.canvasComponent ? this.canvasComponent.getCanvas() : null;
 
-    this.drawingEngine = new DrawingEngine(this.options.canvasId);
+    if (canvas) {
+      // 如果 CanvasComponent 已创建，则复用其 canvas
+      this.drawingEngine = new DrawingEngine(canvas);
+    } else {
+      // 如果 CanvasComponent 还未创建，则通过 ID 查找（降级方案）
+      this.drawingEngine = new DrawingEngine(this.options.canvasId);
+    }
+
     this.debug.log('绘图引擎已初始化');
   }
 
@@ -174,7 +177,7 @@ class VoiceDrawingApp {
   initUIComponents() {
     // 初始化画布组件
     this.canvasComponent = new CanvasComponent({
-      containerId: this.options.containerId
+      containerId: 'canvasContainer'
     });
 
     // 初始化控制面板
@@ -792,9 +795,5 @@ class VoiceDrawingApp {
   }
 }
 
-// 创建并导出默认应用实例
-const app = new VoiceDrawingApp();
-
 // 导出
 export { VoiceDrawingApp };
-export default app;
