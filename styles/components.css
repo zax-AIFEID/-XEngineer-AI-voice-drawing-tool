@@ -3,14 +3,35 @@
 /* ==================== 颜色选择器 ==================== */
 .color-picker-wrapper {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
 }
 
-.color-picker-label {
+.color-picker-input {
+  width: 50px;
+  height: 35px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 2px;
+  background: transparent;
+}
+
+.color-picker-input:hover {
+  border-color: var(--primary-color);
+}
+
+.color-picker-value {
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  font-family: monospace;
+  background: var(--bg-primary);
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
 }
 
 .color-picker-grid {

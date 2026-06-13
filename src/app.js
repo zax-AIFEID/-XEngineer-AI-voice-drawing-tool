@@ -228,7 +228,23 @@ class VoiceDrawingApp {
       });
     });
 
-    // 颜色按钮
+    // 调色盘（自定义颜色）
+    const colorPicker = document.getElementById('colorPicker');
+    const colorPickerValue = document.getElementById('colorPickerValue');
+    if (colorPicker) {
+      colorPicker.addEventListener('input', () => {
+        const color = colorPicker.value;
+        this.setColor(color);
+        // 更新显示值
+        if (colorPickerValue) {
+          colorPickerValue.textContent = color;
+        }
+        // 取消预设颜色的选中状态
+        document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+      });
+    }
+
+    // 颜色按钮（预设颜色）
     document.querySelectorAll('.color-swatch').forEach(btn => {
       btn.addEventListener('click', () => {
         const color = btn.dataset.color;
@@ -237,6 +253,13 @@ class VoiceDrawingApp {
           // 更新选中状态
           document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
+          // 同步更新调色盘
+          if (colorPicker) {
+            colorPicker.value = color;
+          }
+          if (colorPickerValue) {
+            colorPickerValue.textContent = color;
+          }
         }
       });
     });
