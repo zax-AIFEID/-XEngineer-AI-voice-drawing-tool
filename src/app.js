@@ -315,23 +315,6 @@ class VoiceDrawingApp {
       });
     }
 
-    // 日志过滤按钮
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const filter = btn.dataset.filter;
-        if (filter && this.logPanel) {
-          if (filter === 'clear') {
-            this.logPanel.clear();
-          } else {
-            this.logPanel.filter(filter);
-            // 更新选中状态
-            document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-          }
-        }
-      });
-    });
-
     this.debug.log('静态按钮事件绑定完成');
   }
 
