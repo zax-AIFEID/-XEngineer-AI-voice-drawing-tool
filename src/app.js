@@ -672,7 +672,10 @@ class VoiceDrawingApp {
           break;
         case 'smartDraw':
           if (params.steps && Array.isArray(params.steps)) {
-            this.smartDraw(params.steps);
+            // 获取中心坐标（默认画布中心）
+            const centerX = params.x || 400;
+            const centerY = params.y || 300;
+            this.smartDraw(params.steps, centerX, centerY);
             const objectName = params.object || '图形';
             return { success: true, message: `已绘制${objectName}` };
           }
@@ -910,18 +913,24 @@ class VoiceDrawingApp {
           this.drawingEngine.drawCircleByRadius({ x, y }, size);
           break;
         case 'rectangle':
-          this.drawingEngine.drawRectangle(width, height);
+          this.drawingEngine.drawRectangleBySize({ x, y }, width, height);
           break;
         case 'triangle':
-          this.drawingEngine.drawTriangle(size);
+          this.drawingEngine.drawTriangleBySize({ x, y }, size);
           break;
         case 'ellipse':
-          this.drawingEngine.drawEllipse(width, height);
+          this.drawingEngine.drawEllipseBySize({ x, y }, width, height);
           break;
         case 'line':
           if (params.x2 !== undefined && params.y2 !== undefined) {
-            this.drawingEngine.drawLineTo(params.x2, params.y2);
+            this.drawingEngine.drawLineByPoints({ x, y }, { x: params.x2, y: params.y2 });
           }
+          break;
+        case 'star':
+          this.drawingEngine.drawStarBySize({ x, y }, size);
+          break;
+        case 'heart':
+          this.drawingEngine.drawHeartBySize({ x, y }, size);
           break;
         default:
           this.drawingEngine.drawShape(shapeType, size);
@@ -937,8 +946,10 @@ class VoiceDrawingApp {
   /**
    * 智能绘图 - 执行 AI 生成的绘图步骤
    * @param {Array} steps - 绘图步骤数组
+   * @param {number} centerX - 中心 X 坐标（默认 400）
+   * @param {number} centerY - 中心 Y 坐标（默认 300）
    */
-  smartDraw(steps) {
+  smartDraw(steps, centerX = 400, centerY = 300) {
     try {
       if (!this.drawingEngine) {
         throw new Error('drawingEngine 未初始化');
@@ -947,8 +958,8 @@ class VoiceDrawingApp {
         throw new Error('无效的步骤数组: ' + JSON.stringify(steps));
       }
 
-      this.debug.log(`开始智能绘图，步骤数: ${steps.length}`);
-      this.drawingEngine.smartDraw(steps);
+      this.debug.log(`开始智能绘图，步骤数: ${steps.length}, 中心: (${centerX}, ${centerY})`);
+      this.drawingEngine.smartDraw(steps, centerX, centerY);
       this.debug.log(`智能绘图完成，共 ${steps.length} 步`);
     } catch (error) {
       this.debug.error(`smartDraw 失败: ${error.message}`, error);

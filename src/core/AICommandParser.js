@@ -54,6 +54,9 @@ export class AICommandParser {
 - line: 直线，需要 x1, y1, x2, y2
 - ellipse: 椭圆，需要 x, y, width(宽), height(高)
 - triangle: 三角形，需要 x, y, size(大小)
+- brush: 画笔曲线，需要 x, y（起点），可选 points（路径点数组）
+- star: 星星，需要 x, y, size(大小)
+- heart: 心形，需要 x, y, size(大小)
 
 示例：
 用户: "在坐标200,500画一个圆"
@@ -62,13 +65,21 @@ export class AICommandParser {
 用户: "横坐标300纵坐标400画一个矩形"
 返回: {"action": "draw", "params": {"shape": "rectangle", "x": 300, "y": 400, "width": 100, "height": 80}}
 
+用户: "在坐标500,300画一个星星"
+返回: {"action": "draw", "params": {"shape": "star", "x": 500, "y": 300, "size": 50}}
+
+用户: "在坐标200,200画一个心形"
+返回: {"action": "draw", "params": {"shape": "heart", "x": 200, "y": 200, "size": 60}}
+
 ## 模式三：智能绘图（任意物体）
 当用户要求画一个具体物体（如芒果、苹果、房子、太阳、花朵等），返回绘图指令序列：
-{"action": "smartDraw", "params": {"object": "物体名", "steps": [绘图步骤数组]}}
+{"action": "smartDraw", "params": {"object": "物体名", "x": X坐标, "y": Y坐标, "steps": [绘图步骤数组]}}
+
+如果用户指定了位置，x 和 y 是该物体的中心坐标；如果没有指定位置，默认使用画布中心 (400, 300)。
 
 每个绘图步骤包含：
 - type: "ellipse"(椭圆), "circle"(圆), "rectangle"(矩形), "triangle"(三角形), "line"(直线), "arc"(弧线), "path"(路径)
-- x, y: 中心坐标(画布中心约400,300)
+- x, y: 相对于物体中心的偏移坐标
 - color: 十六进制颜色
 - size: 尺寸
 - width, height: 宽高(椭圆/矩形)
@@ -79,37 +90,54 @@ export class AICommandParser {
 
 用户: "画一个芒果"
 返回:
-{"action": "smartDraw", "params": {"object": "芒果", "steps": [
-  {"type": "ellipse", "x": 400, "y": 300, "width": 60, "height": 100, "color": "#ffa500", "filled": true},
-  {"type": "arc", "x": 400, "y": 280, "radius": 30, "startAngle": 200, "endAngle": 340, "color": "#ff8c00"}
+{"action": "smartDraw", "params": {"object": "芒果", "x": 400, "y": 300, "steps": [
+  {"type": "ellipse", "x": 0, "y": 0, "width": 60, "height": 100, "color": "#ffa500", "filled": true},
+  {"type": "arc", "x": 0, "y": -20, "radius": 30, "startAngle": 200, "endAngle": 340, "color": "#ff8c00"}
+]}}
+
+用户: "在坐标500,500画一个芒果"
+返回:
+{"action": "smartDraw", "params": {"object": "芒果", "x": 500, "y": 500, "steps": [
+  {"type": "ellipse", "x": 0, "y": 0, "width": 60, "height": 100, "color": "#ffa500", "filled": true},
+  {"type": "arc", "x": 0, "y": -20, "radius": 30, "startAngle": 200, "endAngle": 340, "color": "#ff8c00"}
 ]}}
 
 用户: "画一个太阳"
 返回:
-{"action": "smartDraw", "params": {"object": "太阳", "steps": [
-  {"type": "circle", "x": 400, "y": 300, "radius": 50, "color": "#ffcc00", "filled": true},
-  {"type": "line", "x1": 400, "y1": 240, "x2": 400, "y2": 200, "color": "#ffcc00"},
-  {"type": "line", "x1": 400, "y1": 360, "x2": 400, "y2": 400, "color": "#ffcc00"},
-  {"type": "line", "x1": 340, "y1": 300, "x2": 300, "y2": 300, "color": "#ffcc00"},
-  {"type": "line", "x1": 460, "y1": 300, "x2": 500, "y2": 300, "color": "#ffcc00"}
+{"action": "smartDraw", "params": {"object": "太阳", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 50, "color": "#ffcc00", "filled": true},
+  {"type": "line", "x": 0, "y": -60, "x2": 0, "y2": -100, "color": "#ffcc00"},
+  {"type": "line", "x": 0, "y": 60, "x2": 0, "y2": 100, "color": "#ffcc00"},
+  {"type": "line", "x": -60, "y": 0, "x2": -100, "y2": 0, "color": "#ffcc00"},
+  {"type": "line", "x": 60, "y": 0, "x2": 100, "y2": 0, "color": "#ffcc00"}
+]}}
+
+用户: "在坐标200,100画一个太阳"
+返回:
+{"action": "smartDraw", "params": {"object": "太阳", "x": 200, "y": 100, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 50, "color": "#ffcc00", "filled": true},
+  {"type": "line", "x": 0, "y": -60, "x2": 0, "y2": -100, "color": "#ffcc00"},
+  {"type": "line", "x": 0, "y": 60, "x2": 0, "y2": 100, "color": "#ffcc00"},
+  {"type": "line", "x": -60, "y": 0, "x2": -100, "y2": 0, "color": "#ffcc00"},
+  {"type": "line", "x": 60, "y": 0, "x2": 100, "y2": 0, "color": "#ffcc00"}
 ]}}
 
 用户: "画一个苹果"
 返回:
-{"action": "smartDraw", "params": {"object": "苹果", "steps": [
-  {"type": "circle", "x": 400, "y": 300, "radius": 60, "color": "#ff0000", "filled": true},
-  {"type": "ellipse", "x": 400, "y": 250, "width": 15, "height": 25, "color": "#00aa00", "filled": true},
-  {"type": "line", "x1": 400, "y1": 250, "x2": 400, "y2": 220, "color": "#8b4513"}
+{"action": "smartDraw", "params": {"object": "苹果", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 60, "color": "#ff0000", "filled": true},
+  {"type": "ellipse", "x": 0, "y": -50, "width": 15, "height": 25, "color": "#00aa00", "filled": true},
+  {"type": "line", "x": 0, "y": -50, "x2": 0, "y2": -80, "color": "#8b4513"}
 ]}}
 
 用户: "画一个房子"
 返回:
-{"action": "smartDraw", "params": {"object": "房子", "steps": [
-  {"type": "rectangle", "x": 400, "y": 350, "width": 120, "height": 100, "color": "#8b4513", "filled": true},
-  {"type": "triangle", "x": 400, "y": 280, "size": 140, "color": "#a52a2a", "filled": true},
-  {"type": "rectangle", "x": 400, "y": 380, "width": 30, "height": 50, "color": "#4a4a4a", "filled": true},
-  {"type": "rectangle", "x": 360, "y": 340, "width": 25, "height": 25, "color": "#87ceeb", "filled": true},
-  {"type": "rectangle", "x": 440, "y": 340, "width": 25, "height": 25, "color": "#87ceeb", "filled": true}
+{"action": "smartDraw", "params": {"object": "房子", "x": 400, "y": 300, "steps": [
+  {"type": "rectangle", "x": 0, "y": 50, "width": 120, "height": 100, "color": "#8b4513", "filled": true},
+  {"type": "triangle", "x": 0, "y": -20, "size": 140, "color": "#a52a2a", "filled": true},
+  {"type": "rectangle", "x": 0, "y": 80, "width": 30, "height": 50, "color": "#4a4a4a", "filled": true},
+  {"type": "rectangle", "x": -40, "y": 40, "width": 25, "height": 25, "color": "#87ceeb", "filled": true},
+  {"type": "rectangle", "x": 40, "y": 40, "width": 25, "height": 25, "color": "#87ceeb", "filled": true}
 ]}}
 
 用户: "把颜色改成蓝色"

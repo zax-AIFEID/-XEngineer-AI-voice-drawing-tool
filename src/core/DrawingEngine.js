@@ -647,6 +647,137 @@ export class DrawingEngine {
   }
 
   /**
+   * 绘制三角形（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawTriangleBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const height = size;
+
+    // 三角形顶点：顶点在上方，底边在下方
+    const x1 = x;
+    const y1 = y - height / 2;
+    const x2 = x - size / 2;
+    const y2 = y + height / 2;
+    const x3 = x + size / 2;
+    const y3 = y + height / 2;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x1, y1);
+    this.ctx.lineTo(x2, y2);
+    this.ctx.lineTo(x3, y3);
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制椭圆（使用位置和宽高）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} width - 宽度
+   * @param {number} height - 高度
+   */
+  drawEllipseBySize(position, width, height) {
+    const x = position.x;
+    const y = position.y;
+
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, width / 2, height / 2, 0, 0, Math.PI * 2);
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制星星（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawStarBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const outerRadius = size / 2;
+    const innerRadius = outerRadius * 0.4;
+    const spikes = 5;
+
+    this.ctx.beginPath();
+
+    for (let i = 0; i < spikes * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (Math.PI / spikes) * i - Math.PI / 2;
+      const px = x + Math.cos(angle) * radius;
+      const py = y + Math.sin(angle) * radius;
+
+      if (i === 0) {
+        this.ctx.moveTo(px, py);
+      } else {
+        this.ctx.lineTo(px, py);
+      }
+    }
+
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
+   * 绘制心形（使用位置和大小）
+   * @param {Object} position - 位置 {x, y}
+   * @param {number} size - 大小
+   */
+  drawHeartBySize(position, size) {
+    const x = position.x;
+    const y = position.y;
+    const scale = size / 30;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y + scale * 10);
+
+    // 左半边曲线
+    this.ctx.bezierCurveTo(
+      x - scale * 15, y - scale * 10,
+      x - scale * 30, y + scale * 15,
+      x, y + scale * 30
+    );
+
+    // 右半边曲线
+    this.ctx.bezierCurveTo(
+      x + scale * 30, y + scale * 15,
+      x + scale * 15, y - scale * 10,
+      x, y + scale * 10
+    );
+
+    this.ctx.closePath();
+
+    if (this.currentState.isFill) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+
+    this.saveToHistory();
+  }
+
+  /**
    * 绘制直线（使用两个点）
    * @param {Object} from - 起点
    * @param {Object} to - 终点
@@ -729,11 +860,13 @@ export class DrawingEngine {
    * 智能绘图 - 执行 AI 生成的绘图步骤序列
    * @param {Array} steps - 绘图步骤数组
    */
-  smartDraw(steps) {
+  smartDraw(steps, centerX = 400, centerY = 300) {
     if (!steps || !Array.isArray(steps)) {
       console.warn('smartDraw: 无效的步骤数组');
       return;
     }
+
+    console.log(`[DEBUG] smartDraw 开始，中心坐标: (${centerX}, ${centerY})`);
 
     // 保存当前状态
     const savedState = {
@@ -746,42 +879,65 @@ export class DrawingEngine {
     steps.forEach((step, index) => {
       this.debug.log(`执行绘图步骤 ${index + 1}: ${step.type}`);
 
+      // 将相对坐标转换为绝对坐标
+      const absoluteStep = { ...step };
+      if (step.x !== undefined) {
+        absoluteStep.x = centerX + step.x;
+      }
+      if (step.y !== undefined) {
+        absoluteStep.y = centerY + step.y;
+      }
+      if (step.x1 !== undefined) {
+        absoluteStep.x1 = centerX + step.x1;
+      }
+      if (step.y1 !== undefined) {
+        absoluteStep.y1 = centerY + step.y1;
+      }
+      if (step.x2 !== undefined) {
+        absoluteStep.x2 = centerX + step.x2;
+      }
+      if (step.y2 !== undefined) {
+        absoluteStep.y2 = centerY + step.y2;
+      }
+
+      console.log(`[DEBUG] 步骤 ${index + 1}: 相对坐标 (${step.x}, ${step.y}) -> 绝对坐标 (${absoluteStep.x}, ${absoluteStep.y})`);
+
       // 设置颜色
-      if (step.color) {
-        this.ctx.fillStyle = step.color;
-        this.ctx.strokeStyle = step.color;
+      if (absoluteStep.color) {
+        this.ctx.fillStyle = absoluteStep.color;
+        this.ctx.strokeStyle = absoluteStep.color;
       }
 
       // 设置线宽
-      if (step.lineWidth || step.size) {
-        this.ctx.lineWidth = step.lineWidth || step.size || 2;
+      if (absoluteStep.lineWidth || absoluteStep.size) {
+        this.ctx.lineWidth = absoluteStep.lineWidth || absoluteStep.size || 2;
       }
 
       // 根据类型绘制
-      switch (step.type) {
+      switch (absoluteStep.type) {
         case 'circle':
-          this.drawSmartCircle(step);
+          this.drawSmartCircle(absoluteStep);
           break;
         case 'ellipse':
-          this.drawSmartEllipse(step);
+          this.drawSmartEllipse(absoluteStep);
           break;
         case 'rectangle':
-          this.drawSmartRectangle(step);
+          this.drawSmartRectangle(absoluteStep);
           break;
         case 'triangle':
-          this.drawSmartTriangle(step);
+          this.drawSmartTriangle(absoluteStep);
           break;
         case 'line':
-          this.drawSmartLine(step);
+          this.drawSmartLine(absoluteStep);
           break;
         case 'arc':
-          this.drawSmartArc(step);
+          this.drawSmartArc(absoluteStep);
           break;
         case 'path':
-          this.drawSmartPath(step);
+          this.drawSmartPath(absoluteStep, centerX, centerY);
           break;
         default:
-          console.warn('未知的绘图类型:', step.type);
+          console.warn('未知的绘图类型:', absoluteStep.type);
       }
     });
 
@@ -903,16 +1059,19 @@ export class DrawingEngine {
   /**
    * 绘制智能路径
    */
-  drawSmartPath(step) {
+  drawSmartPath(step, centerX = 400, centerY = 300) {
     const { points, filled } = step;
 
     if (!points || points.length < 2) return;
 
-    this.ctx.beginPath();
-    this.ctx.moveTo(points[0][0], points[0][1]);
+    // 将相对坐标转换为绝对坐标
+    const absolutePoints = points.map(p => [centerX + p[0], centerY + p[1]]);
 
-    for (let i = 1; i < points.length; i++) {
-      this.ctx.lineTo(points[i][0], points[i][1]);
+    this.ctx.beginPath();
+    this.ctx.moveTo(absolutePoints[0][0], absolutePoints[0][1]);
+
+    for (let i = 1; i < absolutePoints.length; i++) {
+      this.ctx.lineTo(absolutePoints[i][0], absolutePoints[i][1]);
     }
 
     if (filled) {
