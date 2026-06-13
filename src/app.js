@@ -337,6 +337,7 @@ class VoiceDrawingApp {
     // 初始化 AI 指令解析器（如果已配置 API Key）
     if (AI_CONFIG.enabled && AI_CONFIG.apiKey && AI_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
       this.aiCommandParser = initAICommandParser(AI_CONFIG.apiKey, {
+        apiEndpoint: AI_CONFIG.apiEndpoint,
         model: AI_CONFIG.model,
         maxTokens: AI_CONFIG.maxTokens,
         temperature: AI_CONFIG.temperature,
@@ -344,8 +345,10 @@ class VoiceDrawingApp {
         enableCache: AI_CONFIG.enableCache
       });
       this.debug.log('AI 指令解析器已初始化（已启用）');
+      this.debug.log(`AI 配置: endpoint=${AI_CONFIG.apiEndpoint}, model=${AI_CONFIG.model}`);
     } else {
       this.debug.log('AI 指令解析器未启用（请在 src/config/ai.js 中配置 API Key）');
+      this.debug.log(`AI_CONFIG.enabled=${AI_CONFIG.enabled}, apiKey_set=${!!AI_CONFIG.apiKey}`);
     }
   }
 
@@ -523,6 +526,7 @@ class VoiceDrawingApp {
 
     // 第一步：尝试本地指令解析器
     let result = this.commandParser.parseAndExecute(transcript);
+    this.debug.log(`本地解析结果: success=${result.success}, message=${result.message}`);
 
     // 如果本地解析失败或置信度低，尝试 AI 解析器
     if (!result.success && this.aiCommandParser) {
@@ -534,14 +538,23 @@ class VoiceDrawingApp {
 
         // 调用 AI 解析器
         const aiResult = await this.aiCommandParser.parse(transcript);
+        this.debug.log(`AI 解析结果: ${JSON.stringify(aiResult)}`);
 
         if (aiResult && aiResult.action && aiResult.action !== 'unknown') {
           // AI 解析成功，执行命令
           result = this.executeAIParsedCommand(aiResult);
+          this.debug.log(`AI 命令执行结果: ${JSON.stringify(result)}`);
+        } else {
+          this.debug.log('AI 解析未返回有效指令');
         }
       } catch (error) {
         this.debug.error('AI 解析失败', error);
+        if (this.logPanel) {
+          this.logPanel.addErrorLog(`AI 解析失败: ${error.message}`);
+        }
       }
+    } else if (!this.aiCommandParser) {
+      this.debug.log('AI 解析器未初始化');
     }
 
     // 处理结果
@@ -615,12 +628,19 @@ class VoiceDrawingApp {
             return { success: true, message: `已绘制${params.shape}` };
           }
           break;
+        case 'smartDraw':
+          if (params.steps && Array.isArray(params.steps)) {
+            this.smartDraw(params.steps);
+            const objectName = params.object || '图形';
+            return { success: true, message: `已绘制${objectName}` };
+          }
+          break;
       }
 
       return { success: false, message: '未知操作' };
     } catch (error) {
-      this.debug.error('执行 AI 命令失败', error);
-      return { success: false, message: '执行失败' };
+      this.debug.error(`执行 AI 命令失败 - action: ${action}, params: ${JSON.stringify(params)}`, error);
+      return { success: false, message: `执行失败: ${error.message}` };
     }
   }
 
@@ -826,6 +846,28 @@ class VoiceDrawingApp {
       this.drawingEngine.drawShape(shapeType, size);
 
       this.debug.log(`已绘制形状: ${shapeType}`);
+    }
+  }
+
+  /**
+   * 智能绘图 - 执行 AI 生成的绘图步骤
+   * @param {Array} steps - 绘图步骤数组
+   */
+  smartDraw(steps) {
+    try {
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
+      if (!steps || !Array.isArray(steps)) {
+        throw new Error('无效的步骤数组: ' + JSON.stringify(steps));
+      }
+
+      this.debug.log(`开始智能绘图，步骤数: ${steps.length}`);
+      this.drawingEngine.smartDraw(steps);
+      this.debug.log(`智能绘图完成，共 ${steps.length} 步`);
+    } catch (error) {
+      this.debug.error(`smartDraw 失败: ${error.message}`, error);
+      throw error;
     }
   }
 

@@ -52,6 +52,12 @@ export class DrawingEngine {
     this.history = [];
     this.historyIndex = -1;
 
+    // 调试工具
+    this.debug = {
+      log: (msg) => console.log(`[DrawingEngine] ${msg}`),
+      error: (msg, err) => console.error(`[DrawingEngine] ${msg}`, err)
+    };
+
     // 初始化
     this.initCanvas();
     this.setupEventListeners();
@@ -604,6 +610,201 @@ export class DrawingEngine {
   clear(color = null) {
     this.fillBackground(color);
     this.saveToHistory();
+  }
+
+  /**
+   * 智能绘图 - 执行 AI 生成的绘图步骤序列
+   * @param {Array} steps - 绘图步骤数组
+   */
+  smartDraw(steps) {
+    if (!steps || !Array.isArray(steps)) {
+      console.warn('smartDraw: 无效的步骤数组');
+      return;
+    }
+
+    // 保存当前状态
+    const savedState = {
+      color: this.currentState.color,
+      size: this.currentState.size,
+      isFill: this.currentState.isFill
+    };
+
+    // 执行每个绘图步骤
+    steps.forEach((step, index) => {
+      this.debug.log(`执行绘图步骤 ${index + 1}: ${step.type}`);
+
+      // 设置颜色
+      if (step.color) {
+        this.ctx.fillStyle = step.color;
+        this.ctx.strokeStyle = step.color;
+      }
+
+      // 设置线宽
+      if (step.lineWidth || step.size) {
+        this.ctx.lineWidth = step.lineWidth || step.size || 2;
+      }
+
+      // 根据类型绘制
+      switch (step.type) {
+        case 'circle':
+          this.drawSmartCircle(step);
+          break;
+        case 'ellipse':
+          this.drawSmartEllipse(step);
+          break;
+        case 'rectangle':
+          this.drawSmartRectangle(step);
+          break;
+        case 'triangle':
+          this.drawSmartTriangle(step);
+          break;
+        case 'line':
+          this.drawSmartLine(step);
+          break;
+        case 'arc':
+          this.drawSmartArc(step);
+          break;
+        case 'path':
+          this.drawSmartPath(step);
+          break;
+        default:
+          console.warn('未知的绘图类型:', step.type);
+      }
+    });
+
+    // 恢复状态
+    this.currentState.color = savedState.color;
+    this.currentState.size = savedState.size;
+    this.currentState.isFill = savedState.isFill;
+    this.ctx.fillStyle = savedState.color;
+    this.ctx.strokeStyle = savedState.color;
+    this.ctx.lineWidth = savedState.size;
+
+    // 保存到历史
+    this.saveToHistory();
+    this.debug.log('智能绘图完成');
+  }
+
+  /**
+   * 绘制智能圆形
+   */
+  drawSmartCircle(step) {
+    const { x, y, radius, filled } = step;
+    const r = radius || step.size || 50;
+
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, 0, Math.PI * 2);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能椭圆
+   */
+  drawSmartEllipse(step) {
+    const { x, y, width, height, filled } = step;
+    const w = width || 50;
+    const h = height || 80;
+
+    this.ctx.beginPath();
+    this.ctx.ellipse(x, y, w / 2, h / 2, 0, 0, Math.PI * 2);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能矩形
+   */
+  drawSmartRectangle(step) {
+    const { x, y, width, height, filled } = step;
+    const w = width || 100;
+    const h = height || 80;
+
+    this.ctx.beginPath();
+    this.ctx.rect(x - w / 2, y - h / 2, w, h);
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能三角形
+   */
+  drawSmartTriangle(step) {
+    const { x, y, size, filled } = step;
+    const s = size || 100;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - s / 2);
+    this.ctx.lineTo(x - s / 2, y + s / 2);
+    this.ctx.lineTo(x + s / 2, y + s / 2);
+    this.ctx.closePath();
+
+    if (filled) {
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
+  }
+
+  /**
+   * 绘制智能直线
+   */
+  drawSmartLine(step) {
+    const { x1, y1, x2, y2 } = step;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(x1, y1);
+    this.ctx.lineTo(x2, y2);
+    this.ctx.stroke();
+  }
+
+  /**
+   * 绘制智能弧线
+   */
+  drawSmartArc(step) {
+    const { x, y, radius, startAngle, endAngle } = step;
+    const r = radius || 30;
+    const start = (startAngle || 0) * Math.PI / 180;
+    const end = (endAngle || 180) * Math.PI / 180;
+
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, start, end);
+    this.ctx.stroke();
+  }
+
+  /**
+   * 绘制智能路径
+   */
+  drawSmartPath(step) {
+    const { points, filled } = step;
+
+    if (!points || points.length < 2) return;
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(points[0][0], points[0][1]);
+
+    for (let i = 1; i < points.length; i++) {
+      this.ctx.lineTo(points[i][0], points[i][1]);
+    }
+
+    if (filled) {
+      this.ctx.closePath();
+      this.ctx.fill();
+    } else {
+      this.ctx.stroke();
+    }
   }
 
   /**
