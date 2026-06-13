@@ -97,19 +97,11 @@
                   <span class="tool-icon">🖌️</span>
                   <span>画笔</span>
                 </button>
-                <button class="tool-btn" data-tool="pencil">
-                  <span class="tool-icon">✏️</span>
-                  <span>铅笔</span>
-                </button>
-                <button class="tool-btn" data-tool="eraser">
-                  <span class="tool-icon">🧹</span>
-                  <span>橡皮</span>
-                </button>
                 <button class="tool-btn" data-tool="line">
                   <span class="tool-icon">📏</span>
                   <span>直线</span>
                 </button>
-                <button class="tool-btn" data-tool="rect">
+                <button class="tool-btn" data-tool="rectangle">
                   <span class="tool-icon">⬜</span>
                   <span>矩形</span>
                 </button>
@@ -121,9 +113,9 @@
                   <span class="tool-icon">🔺</span>
                   <span>三角形</span>
                 </button>
-                <button class="tool-btn" data-tool="text">
-                  <span class="tool-icon">📝</span>
-                  <span>文字</span>
+                <button class="tool-btn" data-tool="eraser">
+                  <span class="tool-icon">🧹</span>
+                  <span>橡皮</span>
                 </button>
               </div>
             </div>
@@ -134,8 +126,8 @@
               <div class="color-picker-grid">
                 <button class="color-swatch selected" data-color="#000000" style="background-color: #000000;"
                   title="黑色"></button>
-                <button class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"
-                  title="白色"></button>
+                <button class="color-swatch" data-color="#ffffff"
+                  style="background-color: #ffffff; border: 1px solid #ccc;" title="白色"></button>
                 <button class="color-swatch" data-color="#ff0000" style="background-color: #ff0000;"
                   title="红色"></button>
                 <button class="color-swatch" data-color="#00ff00" style="background-color: #00ff00;"
@@ -167,10 +159,7 @@
                   <span class="slider-label">笔刷大小</span>
                   <span id="sizeValue" class="slider-value">5px</span>
                 </div>
-                <div class="slider-track" id="sizeSlider">
-                  <div class="slider-fill" style="width: 25%;"></div>
-                  <div class="slider-thumb" style="left: 25%;"></div>
-                </div>
+                <input type="range" id="sizeSlider" class="size-slider" min="1" max="20" value="5">
                 <div class="slider-marks">
                   <span class="slider-mark">1</span>
                   <span class="slider-mark">10</span>
@@ -201,9 +190,9 @@
         <section class="panel command-help-panel">
           <div class="panel-header">
             <h2 class="panel-title">📋 指令帮助</h2>
-            <button class="panel-toggle collapsed">▼</button>
+            <button class="panel-toggle">▼</button>
           </div>
-          <div class="panel-content collapsed">
+          <div class="panel-content">
             <div class="help-content">
               <div class="search-container">
                 <input type="text" class="search-input" id="commandSearch" placeholder="搜索指令...">
@@ -215,7 +204,7 @@
                 <button class="category-tab" data-category="color">颜色</button>
                 <button class="category-tab" data-category="size">大小</button>
                 <button class="category-tab" data-category="position">位置</button>
-                <button class="category-tab" data-category="draw">绘图</button>
+                <button class="category-tab" data-category="drawing">绘图</button>
               </div>
               <div id="commandList" class="command-list">
                 <!-- 指令列表由 JS 动态生成 -->
@@ -228,13 +217,13 @@
           </div>
         </section>
 
-        <!-- 日志面板 -->
+        <!-- 日志面板（在底部） -->
         <section class="panel log-panel">
           <div class="panel-header">
             <h2 class="panel-title">📝 操作日志</h2>
-            <button class="panel-toggle collapsed">▼</button>
+            <button class="panel-toggle">▼</button>
           </div>
-          <div class="panel-content collapsed">
+          <div class="panel-content">
             <div class="log-toolbar">
               <div class="filter-group">
                 <button class="filter-btn active" data-filter="all">全部</button>

@@ -4,7 +4,6 @@ import { VoiceRecognizer } from './core/VoiceRecognizer.js';
 import { CommandParser } from './core/CommandParser.js';
 import { DrawingEngine } from './core/DrawingEngine.js';
 import { CanvasComponent } from './components/Canvas.js';
-import { ControlPanel } from './components/ControlPanel.js';
 import { CommandHelp } from './components/CommandHelp.js';
 import { LogPanel } from './components/LogPanel.js';
 import { AppState } from './state/AppState.js';
@@ -47,7 +46,6 @@ class VoiceDrawingApp {
 
     // UI组件
     this.canvasComponent = null;
-    this.controlPanel = null;
     this.commandHelp = null;
     this.logPanel = null;
 
@@ -180,20 +178,161 @@ class VoiceDrawingApp {
       containerId: 'canvasContainer'
     });
 
-    // 初始化控制面板
-    this.controlPanel = new ControlPanel({
-      containerId: this.options.containerId,
-      onVoiceToggle: (isActive) => this.handleVoiceToggle(isActive),
-      onToolSelect: (tool) => this.handleToolSelect(tool),
-      onAction: (action) => this.handleAction(action)
-    });
-
     // 初始化指令帮助面板
     this.commandHelp = new CommandHelp({
       containerId: this.options.containerId
     });
 
     this.debug.log('UI组件已初始化');
+  }
+
+  /**
+   * 绑定静态按钮事件
+   */
+  bindStaticButtonEvents() {
+    // 语音控制按钮
+    const startVoiceBtn = document.getElementById('startVoiceBtn');
+    const stopVoiceBtn = document.getElementById('stopVoiceBtn');
+
+    if (startVoiceBtn) {
+      startVoiceBtn.addEventListener('click', () => {
+        this.startVoice();
+        startVoiceBtn.disabled = true;
+        stopVoiceBtn.disabled = false;
+      });
+    }
+
+    if (stopVoiceBtn) {
+      stopVoiceBtn.addEventListener('click', () => {
+        this.stopVoice();
+        stopVoiceBtn.disabled = true;
+        startVoiceBtn.disabled = false;
+      });
+    }
+
+    // 工具按钮
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tool = btn.dataset.tool;
+        if (tool) {
+          this.setTool(tool);
+          // 更新选中状态
+          document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
+
+    // 颜色按钮
+    document.querySelectorAll('.color-swatch').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        if (color) {
+          this.setColor(color);
+          // 更新选中状态
+          document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        }
+      });
+    });
+
+    // 大小滑块
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sizeValue = document.getElementById('sizeValue');
+    if (sizeSlider) {
+      sizeSlider.addEventListener('input', () => {
+        const size = parseInt(sizeSlider.value);
+        this.setSize(size);
+        if (sizeValue) {
+          sizeValue.textContent = `${size}px`;
+        }
+      });
+    }
+
+    // 变细/加粗按钮
+    const decreaseSizeBtn = document.getElementById('decreaseSizeBtn');
+    const increaseSizeBtn = document.getElementById('increaseSizeBtn');
+
+    if (decreaseSizeBtn) {
+      decreaseSizeBtn.addEventListener('click', () => {
+        this.decreaseSize();
+        if (sizeSlider && sizeValue) {
+          sizeValue.textContent = `${sizeSlider.value}px`;
+        }
+      });
+    }
+
+    if (increaseSizeBtn) {
+      increaseSizeBtn.addEventListener('click', () => {
+        this.increaseSize();
+        if (sizeSlider && sizeValue) {
+          sizeValue.textContent = `${sizeSlider.value}px`;
+        }
+      });
+    }
+
+    // 操作按钮
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
+    if (redoBtn) redoBtn.addEventListener('click', () => this.redo());
+    if (clearBtn) clearBtn.addEventListener('click', () => this.clearCanvas());
+    if (saveBtn) saveBtn.addEventListener('click', () => this.saveImage());
+
+    // 面板折叠按钮
+    document.querySelectorAll('.panel-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const panel = toggle.closest('.panel');
+        const content = panel.querySelector('.panel-content');
+        if (content) {
+          content.classList.toggle('collapsed');
+          toggle.textContent = content.classList.contains('collapsed') ? '▼' : '▲';
+        }
+      });
+    });
+
+    // 指令帮助分类标签
+    document.querySelectorAll('.category-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const category = tab.dataset.category;
+        if (category && this.commandHelp) {
+          this.commandHelp.filterByCategory(category);
+          // 更新选中状态
+          document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        }
+      });
+    });
+
+    // 指令搜索
+    const commandSearch = document.getElementById('commandSearch');
+    if (commandSearch && this.commandHelp) {
+      commandSearch.addEventListener('input', (e) => {
+        this.commandHelp.searchCommands(e.target.value);
+      });
+    }
+
+    // 日志过滤按钮
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        if (filter && this.logPanel) {
+          if (filter === 'clear') {
+            this.logPanel.clear();
+          } else {
+            this.logPanel.filter(filter);
+            // 更新选中状态
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          }
+        }
+      });
+    });
+
+    this.debug.log('静态按钮事件绑定完成');
   }
 
   /**
@@ -340,6 +479,9 @@ class VoiceDrawingApp {
     // 键盘快捷键
     document.addEventListener('keydown', (e) => this.handleKeydown(e));
 
+    // 绑定静态按钮事件
+    this.bindStaticButtonEvents();
+
     this.debug.log('事件绑定完成');
   }
 
@@ -465,7 +607,13 @@ class VoiceDrawingApp {
   startVoice() {
     if (this.voiceRecognizer) {
       this.voiceRecognizer.start();
-      this.controlPanel.setVoiceActive(true);
+
+      // 更新语音状态显示
+      const voiceStatus = document.getElementById('voiceStatus');
+      const statusDot = voiceStatus?.querySelector('.status-dot');
+      const statusText = voiceStatus?.querySelector('.status-text');
+      if (statusDot) statusDot.style.background = '#28a745';
+      if (statusText) statusText.textContent = '语音识别中';
 
       if (this.logPanel) {
         this.logPanel.addInfoLog('语音识别已启动');
@@ -483,7 +631,13 @@ class VoiceDrawingApp {
   stopVoice() {
     if (this.voiceRecognizer) {
       this.voiceRecognizer.stop();
-      this.controlPanel.setVoiceActive(false);
+
+      // 更新语音状态显示
+      const voiceStatus = document.getElementById('voiceStatus');
+      const statusDot = voiceStatus?.querySelector('.status-dot');
+      const statusText = voiceStatus?.querySelector('.status-text');
+      if (statusDot) statusDot.style.background = '#ccc';
+      if (statusText) statusText.textContent = '语音未启动';
 
       if (this.logPanel) {
         this.logPanel.addInfoLog('语音识别已停止');
@@ -768,10 +922,6 @@ class VoiceDrawingApp {
     // 销毁组件
     if (this.canvasComponent) {
       this.canvasComponent.destroy();
-    }
-
-    if (this.controlPanel) {
-      this.controlPanel.destroy();
     }
 
     if (this.commandHelp) {
