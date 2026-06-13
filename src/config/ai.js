@@ -3,7 +3,7 @@
 
 export const AI_CONFIG = {
   // 阿里云 API 密钥
-  apiKey: 'sk-ws-H.REIMMYP.mNFE.MEQCIBYvdE6XVjHSByKX9V0UPzq-lUvBN63wE2JRiJz4pOSuAiAG23vr6suvY8lxQfdgKD-XaF3vuTenfgS07_Apsd_O3Q',
+  apiKey: 'sk-ws-H.REIDMMI.r9S4.MEUCIGuZLjXveVaPPeN36u72Gb9hXqpN0yArMzu8X7MGktw0AiEA2dHT-4BkU1OcYiNsT87vEJVoC_VPt83j7EhU5_ISih4',
 
   // 阿里云百炼 API 端点 (兼容 OpenAI 格式)
   apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',

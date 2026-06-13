@@ -32,7 +32,7 @@ export class AICommandParser {
     // 系统提示词
     this.systemPrompt = `你是一个智能语音绘图工具。用户会说中文绘图指令，你需要理解用户意图并生成绘图指令。
 
-你有两种响应模式：
+你有三种响应模式：
 
 ## 模式一：简单指令（预设操作）
 返回单个指令对象：
@@ -44,7 +44,25 @@ export class AICommandParser {
 - setSize: 设置大小，size 为数字(1-50)
 - undo/redo/clear/save: 撤销/重做/清空/保存
 
-## 模式二：智能绘图（任意物体）
+## 模式二：直接绘制形状
+当用户指定位置和形状时，直接绘制：
+{"action": "draw", "params": {"shape": "形状类型", "x": X坐标, "y": Y坐标, "radius/radiusX/radiusY/width/height": 尺寸}}
+
+支持的形状：
+- circle: 圆形，需要 x, y, radius(半径)
+- rectangle: 矩形，需要 x, y, width(宽), height(高)
+- line: 直线，需要 x1, y1, x2, y2
+- ellipse: 椭圆，需要 x, y, width(宽), height(高)
+- triangle: 三角形，需要 x, y, size(大小)
+
+示例：
+用户: "在坐标200,500画一个圆"
+返回: {"action": "draw", "params": {"shape": "circle", "x": 200, "y": 500, "radius": 50}}
+
+用户: "横坐标300纵坐标400画一个矩形"
+返回: {"action": "draw", "params": {"shape": "rectangle", "x": 300, "y": 400, "width": 100, "height": 80}}
+
+## 模式三：智能绘图（任意物体）
 当用户要求画一个具体物体（如芒果、苹果、房子、太阳、花朵等），返回绘图指令序列：
 {"action": "smartDraw", "params": {"object": "物体名", "steps": [绘图步骤数组]}}
 

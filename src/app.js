@@ -320,6 +320,19 @@ class VoiceDrawingApp {
       });
     }
 
+    // 网格切换按钮
+    const toggleGridBtn = document.getElementById('toggleGridBtn');
+    if (toggleGridBtn) {
+      toggleGridBtn.addEventListener('click', () => {
+        const isEnabled = toggleGridBtn.dataset.grid === 'true';
+        const newState = !isEnabled;
+        toggleGridBtn.dataset.grid = newState.toString();
+        toggleGridBtn.classList.toggle('active', newState);
+        toggleGridBtn.querySelector('span:last-child').textContent = newState ? '显示网格' : '隐藏网格';
+        this.toggleGrid(newState);
+      });
+    }
+
     this.debug.log('静态按钮事件绑定完成');
   }
 
@@ -545,7 +558,10 @@ class VoiceDrawingApp {
           result = this.executeAIParsedCommand(aiResult);
           this.debug.log(`AI 命令执行结果: ${JSON.stringify(result)}`);
         } else {
-          this.debug.log('AI 解析未返回有效指令');
+          this.debug.log('AI 解析未返回有效指令: ' + JSON.stringify(aiResult));
+          if (this.logPanel) {
+            this.logPanel.addWarningLog('AI 未能理解指令');
+          }
         }
       } catch (error) {
         this.debug.error('AI 解析失败', error);
@@ -555,6 +571,9 @@ class VoiceDrawingApp {
       }
     } else if (!this.aiCommandParser) {
       this.debug.log('AI 解析器未初始化');
+      if (this.logPanel) {
+        this.logPanel.addInfoLog('AI 解析器未启用');
+      }
     }
 
     // 处理结果
@@ -624,8 +643,8 @@ class VoiceDrawingApp {
           break;
         case 'draw':
           if (params.shape) {
-            this.drawShape(params.shape);
-            return { success: true, message: `已绘制${params.shape}` };
+            this.drawShape(params.shape, params);
+            return { success: true, message: `已在指定位置绘制${params.shape}` };
           }
           break;
         case 'smartDraw':
@@ -834,18 +853,61 @@ class VoiceDrawingApp {
   /**
    * 绘制指定形状
    * @param {string} shapeType - 形状类型 (circle, rectangle, triangle, line)
-   * @param {number} size - 尺寸
+   * @param {number|Object} params - 尺寸或完整参数对象
    */
-  drawShape(shapeType, size = 50) {
-    if (this.drawingEngine) {
-      // 先设置位置到中心
-      const centerPos = { x: 400, y: 300 };
-      this.drawingEngine.setPosition(centerPos);
+  drawShape(shapeType, params = {}) {
+    try {
+      this.debug.log(`drawShape 调用 - shapeType: ${shapeType}, params: ${JSON.stringify(params)}`);
 
-      // 绘制形状
-      this.drawingEngine.drawShape(shapeType, size);
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
 
-      this.debug.log(`已绘制形状: ${shapeType}`);
+      // 如果 params 是数字，转换为对象格式
+      if (typeof params === 'number') {
+        params = { size: params };
+      }
+
+      this.debug.log(`params 类型: ${typeof params}, 值: ${JSON.stringify(params)}`);
+
+      // 设置位置（默认中心）
+      const x = params.x !== undefined ? params.x : 400;
+      const y = params.y !== undefined ? params.y : 300;
+      this.debug.log(`设置位置: (${x}, ${y})`);
+      this.drawingEngine.setPosition({ x, y });
+
+      // 获取尺寸参数
+      const size = params.size || params.radius || 50;
+      const width = params.width || size;
+      const height = params.height || size;
+
+      // 根据形状类型绘制
+      switch (shapeType) {
+        case 'circle':
+          this.drawingEngine.drawCircleByRadius({ x, y }, size);
+          break;
+        case 'rectangle':
+          this.drawingEngine.drawRectangle(width, height);
+          break;
+        case 'triangle':
+          this.drawingEngine.drawTriangle(size);
+          break;
+        case 'ellipse':
+          this.drawingEngine.drawEllipse(width, height);
+          break;
+        case 'line':
+          if (params.x2 !== undefined && params.y2 !== undefined) {
+            this.drawingEngine.drawLineTo(params.x2, params.y2);
+          }
+          break;
+        default:
+          this.drawingEngine.drawShape(shapeType, size);
+      }
+
+      this.debug.log(`已绘制形状: ${shapeType} at (${x}, ${y})`);
+    } catch (error) {
+      this.debug.error(`drawShape 失败: ${error.message}`, error);
+      throw error;
     }
   }
 
@@ -868,6 +930,17 @@ class VoiceDrawingApp {
     } catch (error) {
       this.debug.error(`smartDraw 失败: ${error.message}`, error);
       throw error;
+    }
+  }
+
+  /**
+   * 切换网格显示
+   * @param {boolean} enabled - 是否显示网格
+   */
+  toggleGrid(enabled) {
+    if (this.drawingEngine) {
+      this.drawingEngine.setGridEnabled(enabled);
+      this.debug.log(`网格显示: ${enabled ? '开启' : '关闭'}`);
     }
   }
 

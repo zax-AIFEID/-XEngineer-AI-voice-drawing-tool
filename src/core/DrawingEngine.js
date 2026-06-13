@@ -58,6 +58,15 @@ export class DrawingEngine {
       error: (msg, err) => console.error(`[DrawingEngine] ${msg}`, err)
     };
 
+    // 网格配置（仅边框坐标标签）
+    this.gridConfig = {
+      enabled: true,
+      majorSpacing: 100,
+      showLabels: true,
+      labelColor: '#888888',
+      labelFont: '10px Arial'
+    };
+
     // 初始化
     this.initCanvas();
     this.setupEventListeners();
@@ -80,7 +89,10 @@ export class DrawingEngine {
     // 填充背景
     this.fillBackground();
 
-    // 保存初始状态
+    // 绘制坐标网格
+    this.drawGrid();
+
+    // 保存初始状态（不含网格）
     this.saveToHistory();
   }
 
@@ -134,6 +146,86 @@ export class DrawingEngine {
   fillBackground(color = null) {
     this.ctx.fillStyle = color || this.config.backgroundColor;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  /**
+   * 绘制坐标标签（不保存到历史记录）
+   */
+  drawGrid() {
+    if (!this.gridConfig.enabled) return;
+
+    const { width, height } = this.config;
+    const { majorSpacing, showLabels, labelColor, labelFont } = this.gridConfig;
+
+    // 保存当前绘图状态
+    this.ctx.save();
+
+    // 只在边框显示坐标标签（无网格线）
+    if (showLabels) {
+      this.ctx.fillStyle = labelColor;
+      this.ctx.font = labelFont;
+
+      // 顶部边框坐标（X轴）
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'top';
+      for (let x = 0; x <= width; x += majorSpacing) {
+        this.ctx.fillText(x.toString(), x, 2);
+      }
+
+      // 左侧边框坐标（Y轴）
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'middle';
+      for (let y = 0; y <= height; y += majorSpacing) {
+        this.ctx.fillText(y.toString(), 2, y);
+      }
+
+      // 右侧边框坐标（Y轴）
+      this.ctx.textAlign = 'right';
+      for (let y = 0; y <= height; y += majorSpacing) {
+        this.ctx.fillText(y.toString(), width - 2, y);
+      }
+
+      // 底部边框坐标（X轴）
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'bottom';
+      for (let x = 0; x <= width; x += majorSpacing) {
+        this.ctx.fillText(x.toString(), x, height - 2);
+      }
+    }
+
+    // 恢复绘图状态
+    this.ctx.restore();
+  }
+
+  /**
+   * 显示/隐藏网格
+   * @param {boolean} enabled - 是否显示
+   */
+  setGridEnabled(enabled) {
+    this.gridConfig.enabled = enabled;
+
+    // 先恢复历史状态（清除网格）
+    if (this.historyIndex >= 0 && this.history[this.historyIndex]) {
+      this.ctx.putImageData(this.history[this.historyIndex], 0, 0);
+    }
+
+    // 如果启用网格，则绘制网格
+    if (enabled) {
+      this.drawGrid();
+    }
+  }
+
+  /**
+   * 重绘画布（包含网格）
+   */
+  redrawWithGrid() {
+    // 先恢复历史状态
+    if (this.historyIndex >= 0 && this.history[this.historyIndex]) {
+      this.ctx.putImageData(this.history[this.historyIndex], 0, 0);
+    }
+
+    // 然后绘制网格（叠加在上面）
+    this.drawGrid();
   }
 
   /**
@@ -432,8 +524,24 @@ export class DrawingEngine {
    * @param {Object} position - 位置 {x, y}
    */
   setPosition(position) {
-    if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+    console.log('[DEBUG] setPosition 调用:', JSON.stringify(position));
+
+    if (!position) {
+      console.error('[DEBUG] setPosition 失败: position 是 undefined');
+      return;
+    }
+
+    if (typeof position.x !== 'number' || typeof position.y !== 'number') {
+      console.error('[DEBUG] setPosition 失败: position.x 或 position.y 不是数字:', position);
+      return;
+    }
+
+    try {
       this.currentState.position = BoundaryHelper.clampPoint(position);
+      console.log('[DEBUG] setPosition 成功:', this.currentState.position);
+    } catch (error) {
+      console.error('[DEBUG] setPosition clampPoint 失败:', error.message);
+      throw error;
     }
   }
 
@@ -584,6 +692,8 @@ export class DrawingEngine {
       this.historyIndex--;
       const imageData = this.history[this.historyIndex];
       this.ctx.putImageData(imageData, 0, 0);
+      // 撤销后重新绘制网格（叠加显示）
+      this.drawGrid();
       return true;
     }
     return false;
@@ -598,6 +708,8 @@ export class DrawingEngine {
       this.historyIndex++;
       const imageData = this.history[this.historyIndex];
       this.ctx.putImageData(imageData, 0, 0);
+      // 重做后重新绘制网格（叠加显示）
+      this.drawGrid();
       return true;
     }
     return false;
@@ -609,6 +721,7 @@ export class DrawingEngine {
    */
   clear(color = null) {
     this.fillBackground(color);
+    this.drawGrid();
     this.saveToHistory();
   }
 
@@ -679,6 +792,9 @@ export class DrawingEngine {
     this.ctx.fillStyle = savedState.color;
     this.ctx.strokeStyle = savedState.color;
     this.ctx.lineWidth = savedState.size;
+
+    // 绘制网格（叠加显示）
+    this.drawGrid();
 
     // 保存到历史
     this.saveToHistory();
