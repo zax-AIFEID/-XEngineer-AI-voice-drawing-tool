@@ -778,6 +778,36 @@ export class DrawingEngine {
   }
 
   /**
+   * 绘制文字
+   * @param {Object} position - 位置 {x, y}
+   * @param {string} text - 文字内容
+   * @param {number} fontSize - 字体大小（可选，默认 24）
+   * @param {string} fontFamily - 字体名称（可选，默认 Arial）
+   */
+  drawText(position, text, fontSize = 24, fontFamily = 'Arial') {
+    const x = position.x;
+    const y = position.y;
+
+    // 保存当前绘图状态
+    this.ctx.save();
+
+    // 设置字体
+    this.ctx.font = `${fontSize}px ${fontFamily}`;
+    this.ctx.fillStyle = this.currentState.color;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+
+    // 绘制文字
+    this.ctx.fillText(text, x, y);
+
+    // 恢复绘图状态
+    this.ctx.restore();
+
+    this.saveToHistory();
+    this.debug.log(`已绘制文字: "${text}" 在位置 (${x}, ${y})`);
+  }
+
+  /**
    * 绘制直线（使用两个点）
    * @param {Object} from - 起点
    * @param {Object} to - 终点

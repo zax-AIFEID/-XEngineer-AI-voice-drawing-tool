@@ -250,6 +250,29 @@ export class AppState {
   }
 
   /**
+   * 设置字体大小
+   * @param {number} size - 字体大小
+   * @returns {boolean} 是否设置成功
+   */
+  setFontSize(size) {
+    if (this.state.fontSize !== size) {
+      this.state.fontSize = size;
+      this.saveToHistory();
+      this.emit('fontSizeChange', size);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 获取字体大小
+   * @returns {number} 当前字体大小
+   */
+  getFontSize() {
+    return this.state.fontSize;
+  }
+
+  /**
    * 设置是否正在绘图
    * @param {boolean} isDrawing - 是否正在绘图
    */

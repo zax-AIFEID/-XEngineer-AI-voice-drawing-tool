@@ -113,6 +113,7 @@ export const DEFAULT_STATE = {
   position: POSITIONS['中心'],
   drawingMode: DRAWING_MODE.STROKE,
   isDrawing: false,
+  fontSize: 24,  // 默认字体大小
 };
 
 /**

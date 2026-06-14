@@ -318,6 +318,39 @@ export const DRAWING_COMMANDS = [
     params: { value: false },
     feedback: '已切换到描边模式',
     description: '切换到描边模式'
+  },
+  {
+    keywords: ['写字', '写文字', '写', '输入文字', '添加文字'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'drawText',
+    params: {
+      pattern: /(?:写字|写文字|写|输入文字|添加文字)\s*(.+)/,
+      transformer: (text) => ({ text: text.trim() })
+    },
+    feedback: (params) => `已写入文字: ${params.text}`,
+    description: '在当前位置绘制文字'
+  },
+  {
+    keywords: ['在坐标写字', '在位置写字'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'drawTextAt',
+    params: {
+      pattern: /(?:在坐标|在位置)\s*(\d+)\s*[,\s]\s*(\d+)\s*(?:写字|写文字|写)\s*(.+)/,
+      transformer: (x, y, text) => ({ x: parseInt(x), y: parseInt(y), text: text.trim() })
+    },
+    feedback: (params) => `已在坐标(${params.x},${params.y})写入文字: ${params.text}`,
+    description: '在指定坐标绘制文字'
+  },
+  {
+    keywords: ['字体大小', '字号', '文字大小'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'setFontSize',
+    params: {
+      pattern: /(?:字体大小|字号|文字大小)\s*(\d+)/,
+      transformer: (size) => parseInt(size)
+    },
+    feedback: (size) => `字体大小已设置为${size}`,
+    description: '设置字体大小'
   }
 ];
 

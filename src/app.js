@@ -628,6 +628,19 @@ class VoiceDrawingApp {
 
     try {
       switch (action) {
+        case 'multiStep':
+          // 执行多步指令
+          if (params.steps && Array.isArray(params.steps)) {
+            this.debug.log(`执行多步指令，共 ${params.steps.length} 步`);
+            const results = [];
+            for (const step of params.steps) {
+              const result = this.executeAIParsedCommand(step);
+              results.push(result);
+              this.debug.log(`步骤执行结果: ${JSON.stringify(result)}`);
+            }
+            return { success: true, message: `已完成 ${params.steps.length} 个操作` };
+          }
+          break;
         case 'setTool':
           if (params.tool) {
             this.setTool(params.tool);
@@ -644,6 +657,12 @@ class VoiceDrawingApp {
           if (params.size) {
             this.setSize(params.size);
             return { success: true, message: `已设置大小为${params.size}` };
+          }
+          break;
+        case 'setFill':
+          if (params.fill !== undefined) {
+            this.appState.setFillMode(params.fill);
+            return { success: true, message: params.fill ? '已开启填充' : '已关闭填充' };
           }
           break;
         case 'undo':
@@ -678,6 +697,15 @@ class VoiceDrawingApp {
             this.smartDraw(params.steps, centerX, centerY);
             const objectName = params.object || '图形';
             return { success: true, message: `已绘制${objectName}` };
+          }
+          break;
+        case 'drawText':
+          if (params.text) {
+            const x = params.x || this.appState.getPosition().x;
+            const y = params.y || this.appState.getPosition().y;
+            const fontSize = params.fontSize || 24;
+            this.drawingEngine.drawText({ x, y }, params.text, fontSize);
+            return { success: true, message: `已写入文字: ${params.text}` };
           }
           break;
       }
@@ -964,6 +992,42 @@ class VoiceDrawingApp {
     } catch (error) {
       this.debug.error(`smartDraw 失败: ${error.message}`, error);
       throw error;
+    }
+  }
+
+  /**
+   * 绘制文字
+   * @param {string} text - 文字内容
+   * @param {Object} position - 位置 {x, y}（可选，默认当前位置）
+   * @param {number} fontSize - 字体大小（可选，默认 24）
+   */
+  drawText(text, position = null, fontSize = 24) {
+    try {
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
+
+      const pos = position || this.appState.getPosition();
+      this.debug.log(`绘制文字: "${text}" 在位置 (${pos.x}, ${pos.y}), 字体大小: ${fontSize}`);
+      this.drawingEngine.drawText(pos, text, fontSize);
+
+      if (this.speechFeedback) {
+        this.speechFeedback.speak(`已写入文字: ${text}`);
+      }
+    } catch (error) {
+      this.debug.error(`drawText 失败: ${error.message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 设置字体大小
+   * @param {number} size - 字体大小
+   */
+  setFontSize(size) {
+    if (this.appState) {
+      this.appState.setFontSize(size);
+      this.debug.log(`字体大小已设置为: ${size}`);
     }
   }
 
