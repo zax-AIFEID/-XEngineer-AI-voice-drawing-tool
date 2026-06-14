@@ -1,4 +1,5 @@
 // AI 指令解析器 - 使用阿里云通义千问 API 增强指令理解
+import { getAlibabaCloudApiKey, getApiBaseUrl } from '../utils/env.js';
 
 /**
  * AI 指令解析器类
@@ -7,10 +8,14 @@
  */
 export class AICommandParser {
   constructor(options = {}) {
+    // 从环境变量获取默认配置
+    const defaultApiKey = getAlibabaCloudApiKey();
+    const defaultApiEndpoint = getApiBaseUrl();
+
     this.options = {
-      apiKey: options.apiKey || '',
+      apiKey: options.apiKey || defaultApiKey,
       // 阿里云百炼 API 端点 (兼容 OpenAI 格式)
-      apiEndpoint: options.apiEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+      apiEndpoint: options.apiEndpoint || defaultApiEndpoint,
       // 通义千问模型: qwen-turbo(免费), qwen-plus(更强), qwen-max(旗舰)
       model: options.model || 'qwen-turbo',
       maxTokens: options.maxTokens || 150,
@@ -28,6 +33,11 @@ export class AICommandParser {
       log: (msg, type = 'info') => console.log(`[AICommandParser] ${msg}`),
       error: (msg, err) => console.error(`[AICommandParser] ${msg}`, err)
     };
+
+    // 检查 API 密钥是否配置
+    if (!this.options.apiKey || this.options.apiKey.includes('your_')) {
+      this.debug.error('警告：API 密钥未配置！请在 .env 文件中设置 ALIBABA_CLOUD_API_KEY');
+    }
 
     // 系统提示词
     this.systemPrompt = `你是一个智能语音绘图工具。用户会说中文绘图指令，你需要理解用户意图并生成绘图指令。

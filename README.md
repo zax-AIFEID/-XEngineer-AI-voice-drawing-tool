@@ -21,10 +21,17 @@
 
 ### 🎨 丰富的绘图功能
 - **自定义调色盘**：支持任意颜色选择
-- **预设颜色**：12 种常用颜色快速切换
+- **预设颜色**：16 种常用颜色快速切换
 - **画笔大小调节**：支持 1-50 像素
 - **填充/描边切换**：支持形状填充和描边模式
 - **撤销/重做**：支持历史记录管理
+
+### ✏️ 图形修改功能
+- **选择图形**：支持选择第一个、最后一个或指定序号的图形
+- **修改颜色**：实时改变选中图形的颜色
+- **修改大小**：调整图形尺寸
+- **移动图形**：上下左右移动选中的图形
+- **删除图形**：删除选中或指定的图形
 
 ## 📋 支持的语音指令
 
@@ -57,6 +64,17 @@
 | "画一个房子" | AI 自动绘制房子 |
 | "在坐标500,500画一个苹果" | 在指定位置绘制苹果 |
 
+### 图形修改指令
+
+| 指令类型 | 示例指令 | 效果 |
+|---------|---------|------|
+| 选择图形 | "选择第一个"、"选择最后一个" | 选中指定图形 |
+| 修改颜色 | "改变颜色红色"、"把颜色改成蓝色" | 修改选中图形颜色 |
+| 修改大小 | "改变大小50" | 修改选中图形大小 |
+| 移动图形 | "向上移动50"、"向右移动30" | 移动选中图形 |
+| 删除图形 | "删除图形"、"删除第一个" | 删除选中或指定图形 |
+| 取消选择 | "取消选择" | 取消当前选中状态 |
+
 ### 操作指令
 
 | 指令 | 功能 |
@@ -82,12 +100,10 @@
 
 2. **配置 API Key**
    
-   打开 `src/config/ai.js`，填入你的阿里云 API Key：
-   ```javascript
-   export const AI_CONFIG = {
-     apiKey: 'your-api-key-here',
-     // ...
-   };
+   打开 `.env` 文件，填入你的阿里云 API Key：
+   ```env
+   ALIBABA_CLOUD_API_KEY=your-api-key-here
+   API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
    ```
 
 3. **运行项目**
@@ -108,6 +124,8 @@ XEngineer-AI-voice-drawing-tool/
 ├── index.html              # 主页面
 ├── README.md               # 项目说明
 ├── DESIGN.md               # 设计文档
+├── .env                    # 环境变量配置（包含 API Key）
+├── .gitignore              # Git 忽略配置
 ├── src/
 │   ├── app.js              # 应用入口
 │   ├── components/         # UI 组件
@@ -128,7 +146,8 @@ XEngineer-AI-voice-drawing-tool/
 │   └── utils/              # 工具函数
 │       ├── constants.js
 │       ├── helpers.js
-│       └── speechFeedback.js
+│       ├── speechFeedback.js
+│       └── env.js          # 环境变量读取工具
 └── styles/                 # 样式文件
     ├── main.css
     ├── components.css
