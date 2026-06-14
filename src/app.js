@@ -509,6 +509,109 @@ class VoiceDrawingApp {
       this.setFillMode(params.value);
     });
 
+    // 图形修改指令
+    this.commandParser.registerHandler('selectFirstObject', () => {
+      this.drawingEngine.selectFirstObject();
+      if (this.speechFeedback) {
+        this.speechFeedback.speak('已选中第一个图形');
+      }
+    });
+
+    this.commandParser.registerHandler('selectLastObject', () => {
+      this.drawingEngine.selectLastObject();
+      if (this.speechFeedback) {
+        this.speechFeedback.speak('已选中最后一个图形');
+      }
+    });
+
+    this.commandParser.registerHandler('selectObject', (params) => {
+      if (params.value !== undefined) {
+        this.drawingEngine.selectObject(params.value);
+        if (this.speechFeedback) {
+          this.speechFeedback.speak(`已选中第${params.value + 1}个图形`);
+        }
+      }
+    });
+
+    this.commandParser.registerHandler('modifyColor', (params) => {
+      const colorHex = this.getColorHex(params.value);
+      if (colorHex) {
+        const success = this.drawingEngine.modifySelectedObject({ color: colorHex });
+        if (success && this.speechFeedback) {
+          this.speechFeedback.speak(`颜色已改为${params.value}`);
+        } else if (!success && this.speechFeedback) {
+          this.speechFeedback.speak('请先选择一个图形');
+        }
+      }
+    });
+
+    this.commandParser.registerHandler('modifySize', (params) => {
+      if (params.value !== undefined) {
+        const success = this.drawingEngine.modifySelectedObject({ size: params.value });
+        if (success && this.speechFeedback) {
+          this.speechFeedback.speak(`大小已改为${params.value}`);
+        } else if (!success && this.speechFeedback) {
+          this.speechFeedback.speak('请先选择一个图形');
+        }
+      }
+    });
+
+    this.commandParser.registerHandler('moveObject', (params) => {
+      let dx = 0, dy = 0;
+      const distance = params.value || 50;
+      
+      if (params.direction === 'up' || params.value === '向上') {
+        dy = -distance;
+      } else if (params.direction === 'down' || params.value === '向下') {
+        dy = distance;
+      } else if (params.direction === 'left' || params.value === '向左') {
+        dx = -distance;
+      } else if (params.direction === 'right' || params.value === '向右') {
+        dx = distance;
+      }
+      
+      const success = this.drawingEngine.moveSelectedObject(dx, dy);
+      if (success && this.speechFeedback) {
+        this.speechFeedback.speak(`已移动${distance}像素`);
+      } else if (!success && this.speechFeedback) {
+        this.speechFeedback.speak('请先选择一个图形');
+      }
+    });
+
+    this.commandParser.registerHandler('deleteSelectedObject', () => {
+      const success = this.drawingEngine.deleteSelectedObject();
+      if (success && this.speechFeedback) {
+        this.speechFeedback.speak('已删除选中的图形');
+      } else if (!success && this.speechFeedback) {
+        this.speechFeedback.speak('请先选择一个图形');
+      }
+    });
+
+    this.commandParser.registerHandler('deleteFirstObject', () => {
+      const success = this.drawingEngine.deleteObject(0);
+      if (success && this.speechFeedback) {
+        this.speechFeedback.speak('已删除第一个图形');
+      }
+    });
+
+    this.commandParser.registerHandler('deleteLastObject', () => {
+      const count = this.drawingEngine.getObjectCount();
+      if (count > 0) {
+        const success = this.drawingEngine.deleteObject(count - 1);
+        if (success && this.speechFeedback) {
+          this.speechFeedback.speak('已删除最后一个图形');
+        }
+      }
+    });
+
+    this.commandParser.registerHandler('deselectObject', () => {
+      this.drawingEngine.selectedObjectIndex = -1;
+      this.drawingEngine.redrawAll();
+      if (this.speechFeedback) {
+        this.speechFeedback.speak('已取消选择');
+      }
+    });
+
     this.debug.log('命令处理函数已注册');
   }
 
@@ -708,6 +811,83 @@ class VoiceDrawingApp {
             return { success: true, message: `已写入文字: ${params.text}` };
           }
           break;
+        case 'selectFirstObject':
+          const firstSelected = this.drawingEngine.selectFirstObject();
+          if (firstSelected) {
+            return { success: true, message: '已选中第一个图形' };
+          }
+          return { success: false, message: '没有图形可选择' };
+        case 'selectLastObject':
+          const lastSelected = this.drawingEngine.selectLastObject();
+          if (lastSelected) {
+            return { success: true, message: '已选中最后一个图形' };
+          }
+          return { success: false, message: '没有图形可选择' };
+        case 'selectObject':
+          if (params.index !== undefined) {
+            const selected = this.drawingEngine.selectObject(params.index);
+            if (selected) {
+              return { success: true, message: `已选中第${params.index + 1}个图形` };
+            }
+            return { success: false, message: '图形不存在' };
+          }
+          break;
+        case 'modifyColor':
+          if (params.color) {
+            const colorHex = this.getColorHex(params.color);
+            if (colorHex) {
+              const modified = this.drawingEngine.modifySelectedObject({ color: colorHex });
+              if (modified) {
+                return { success: true, message: `颜色已改为${params.color}` };
+              }
+              return { success: false, message: '请先选择一个图形' };
+            }
+            return { success: false, message: `无法识别颜色: ${params.color}` };
+          }
+          break;
+        case 'modifySize':
+          if (params.size !== undefined) {
+            const modified = this.drawingEngine.modifySelectedObject({ size: params.size });
+            if (modified) {
+              return { success: true, message: `大小已改为${params.size}` };
+            }
+            return { success: false, message: '请先选择一个图形' };
+          }
+          break;
+        case 'moveObject':
+          if (params.dx !== undefined && params.dy !== undefined) {
+            const moved = this.drawingEngine.moveSelectedObject(params.dx, params.dy);
+            if (moved) {
+              return { success: true, message: `已移动(${params.dx}, ${params.dy})` };
+            }
+            return { success: false, message: '请先选择一个图形' };
+          }
+          break;
+        case 'deleteSelectedObject':
+          const deleted = this.drawingEngine.deleteSelectedObject();
+          if (deleted) {
+            return { success: true, message: '已删除选中的图形' };
+          }
+          return { success: false, message: '请先选择一个图形' };
+        case 'deleteFirstObject':
+          const firstDeleted = this.drawingEngine.deleteObject(0);
+          if (firstDeleted) {
+            return { success: true, message: '已删除第一个图形' };
+          }
+          return { success: false, message: '没有图形可删除' };
+        case 'deleteLastObject':
+          const count = this.drawingEngine.getObjectCount();
+          if (count > 0) {
+            const lastDeleted = this.drawingEngine.deleteObject(count - 1);
+            if (lastDeleted) {
+              return { success: true, message: '已删除最后一个图形' };
+            }
+          }
+          return { success: false, message: '没有图形可删除' };
+        case 'deselectObject':
+          this.drawingEngine.selectedObjectIndex = -1;
+          this.drawingEngine.redrawAll();
+          return { success: true, message: '已取消选择' };
       }
 
       return { success: false, message: '未知操作' };
@@ -848,6 +1028,44 @@ class VoiceDrawingApp {
     this.appState.setColor(color);
 
     this.debug.log(`颜色已设置: ${color}`);
+  }
+
+  /**
+   * 将颜色名称转换为十六进制颜色值
+   * @param {string} colorName - 颜色名称
+   * @returns {string|null} 十六进制颜色值
+   */
+  getColorHex(colorName) {
+    const colorMap = {
+      '红色': '#ff0000',
+      '橙色': '#ffa500',
+      '黄色': '#ffff00',
+      '绿色': '#00ff00',
+      '蓝色': '#0000ff',
+      '紫色': '#800080',
+      '粉色': '#ff69b4',
+      '黑色': '#000000',
+      '白色': '#ffffff',
+      '灰色': '#808080',
+      '棕色': '#8b4513',
+      '金色': '#ffd700',
+      '青色': '#00ffff',
+      '深蓝': '#000080',
+      '浅蓝': '#add8e6',
+      '深红': '#8b0000',
+      '浅绿': '#90ee90',
+      '天蓝': '#87ceeb',
+      '玫瑰红': '#ff69b4',
+      '紫罗兰': '#ee82ee',
+      '靛蓝': '#4b0082'
+    };
+    
+    // 如果已经是十六进制格式，直接返回
+    if (/^#[0-9a-fA-F]{6}$/.test(colorName)) {
+      return colorName;
+    }
+    
+    return colorMap[colorName] || null;
   }
 
   /**

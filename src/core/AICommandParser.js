@@ -319,6 +319,56 @@ export class AICommandParser {
 - 深红: #8b0000
 - 浅绿: #90ee90
 
+## 模式三：相对位置组合绘图（最重要！）
+当用户说要画组合图形时，使用 smartDraw 模式！
+返回格式：{"action": "smartDraw", "params": {"object": "物体名称", "x": 400, "y": 300, "steps": [...]}}
+
+**重要规则**：
+- 所有坐标都是相对于中心点(0,0)的偏移量
+- 正x向右，正y向下
+- 正方形/矩形：y用正值（向下）
+- 三角形作为屋顶：y用负值（向上）
+
+**标准组合图形示例**：
+
+1. "紧贴着正方形上方画一个三角形" → 房子
+返回: {"action": "smartDraw", "params": {"object": "房子", "x": 400, "y": 320, "steps": [
+  {"type": "rectangle", "x": 0, "y": 50, "width": 100, "height": 80, "color": "#8b4513", "filled": true},
+  {"type": "triangle", "x": 0, "y": -40, "size": 120, "color": "#a52a2a", "filled": true}
+]}}
+
+2. "在圆形左边画一个正方形" → 月亮和星星
+返回: {"action": "smartDraw", "params": {"object": "圆和正方形", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": -50, "y": 0, "radius": 40, "color": "#ffffcc", "filled": true},
+  {"type": "rectangle", "x": 60, "y": -30, "width": 60, "height": 60, "color": "#ffff00", "filled": true}
+]}}
+
+3. "在三角形下面画一个圆" → 雪人
+返回: {"action": "smartDraw", "params": {"object": "三角形和圆", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": -40, "radius": 40, "color": "#ffffff", "filled": true},
+  {"type": "circle", "x": 0, "y": 40, "radius": 50, "color": "#ffffff", "filled": true}
+]}}
+
+4. "画一个房子" → 带门的小房子
+返回: {"action": "smartDraw", "params": {"object": "房子", "x": 400, "y": 320, "steps": [
+  {"type": "rectangle", "x": 0, "y": 50, "width": 120, "height": 100, "color": "#8b4513", "filled": true},
+  {"type": "triangle", "x": 0, "y": -40, "size": 140, "color": "#a52a2a", "filled": true},
+  {"type": "rectangle", "x": 0, "y": 80, "width": 30, "height": 50, "color": "#4a4a4a", "filled": true}
+]}}
+
+5. "在圆形上方画一颗星星" → 月亮和星星
+返回: {"action": "smartDraw", "params": {"object": "月亮和星星", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 30, "radius": 45, "color": "#ffffcc", "filled": true},
+  {"type": "star", "x": 0, "y": -50, "size": 30, "color": "#ffff00", "filled": true}
+]}}
+
+**相对位置关键词映射**：
+- "上方"/"上面"/"顶部"/"紧贴...上方" → y用负值
+- "下方"/"下面"/"底部"/"紧贴...下方" → y用正值
+- "左边"/"左侧"/"紧贴...左边" → x用负值
+- "右边"/"右侧"/"紧贴...右边" → x用正值
+- "紧贴" → 两个图形边缘刚好接触
+
 形状映射：
 - 圆/圆形: circle
 - 矩形/方形/长方形: rectangle
