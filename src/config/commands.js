@@ -351,6 +351,92 @@ export const DRAWING_COMMANDS = [
     },
     feedback: (size) => `字体大小已设置为${size}`,
     description: '设置字体大小'
+  },
+  {
+    keywords: ['选择第一个', '选中第一个', '选择第一个图形'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'selectFirstObject',
+    feedback: '已选中第一个图形',
+    description: '选择第一个图形'
+  },
+  {
+    keywords: ['选择最后一个', '选中最后一个', '选择最后一个图形'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'selectLastObject',
+    feedback: '已选中最后一个图形',
+    description: '选择最后一个图形'
+  },
+  {
+    keywords: ['选择图形', '选中图形', '选择第几个'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'selectObject',
+    params: {
+      pattern: /(?:选择|选中)(?:图形)?\s*(第)?\s*(\d+)\s*(?:个)?/,
+      transformer: (_, index) => parseInt(index) - 1
+    },
+    feedback: (index) => `已选中第${index + 1}个图形`,
+    description: '选择指定序号的图形'
+  },
+  {
+    keywords: ['改变颜色', '修改颜色', '换颜色', '把颜色改成', '将颜色改为'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'modifyColor',
+    params: {
+      pattern: /(?:改变颜色|修改颜色|换颜色|把颜色改成|将颜色改为)\s*(.+)/,
+      transformer: (colorName) => colorName.trim()
+    },
+    feedback: (color) => `已将颜色改为${color}`,
+    description: '修改选中图形的颜色'
+  },
+  {
+    keywords: ['改变大小', '修改大小', '放大', '缩小'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'modifySize',
+    params: {
+      pattern: /(?:改变大小|修改大小|放大|缩小)\s*(\d+)/,
+      transformer: (size) => parseInt(size)
+    },
+    feedback: (size) => `已将大小改为${size}`,
+    description: '修改选中图形的大小'
+  },
+  {
+    keywords: ['移动图形', '向上移动', '向下移动', '向左移动', '向右移动'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'moveObject',
+    params: {
+      pattern: /(?:移动|向上移动|向下移动|向左移动|向右移动)\s*(\d+)/,
+      transformer: (distance) => parseInt(distance)
+    },
+    feedback: (distance) => `已移动${distance}像素`,
+    description: '移动选中的图形'
+  },
+  {
+    keywords: ['删除图形', '移除图形', '删除选中', '移除选中'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'deleteSelectedObject',
+    feedback: '已删除选中的图形',
+    description: '删除选中的图形'
+  },
+  {
+    keywords: ['删除第一个', '删除第一个图形'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'deleteFirstObject',
+    feedback: '已删除第一个图形',
+    description: '删除第一个图形'
+  },
+  {
+    keywords: ['删除最后一个', '删除最后一个图形'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'deleteLastObject',
+    feedback: '已删除最后一个图形',
+    description: '删除最后一个图形'
+  },
+  {
+    keywords: ['取消选择', '取消选中', '取消选择图形'],
+    category: COMMAND_CATEGORIES.DRAWING,
+    action: 'deselectObject',
+    feedback: '已取消选择',
+    description: '取消当前选中的图形'
   }
 ];
 

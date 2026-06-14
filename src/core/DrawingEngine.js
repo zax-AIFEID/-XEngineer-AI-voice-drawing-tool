@@ -48,6 +48,12 @@ export class DrawingEngine {
       lastPosition: null
     };
 
+    // 绘制的图形对象列表（用于修改和选择）
+    this.drawnObjects = [];
+
+    // 当前选中的图形索引
+    this.selectedObjectIndex = -1;
+
     // 历史记录（用于撤销/重做）
     this.history = [];
     this.historyIndex = -1;
@@ -592,22 +598,40 @@ export class DrawingEngine {
       y: pos.y + size
     };
 
+    // 创建图形对象
+    const shapeObj = {
+      type: shapeType,
+      x: pos.x,
+      y: pos.y,
+      size: size,
+      color: this.currentState.color,
+      filled: this.currentState.isFill
+    };
+
     switch (shapeType) {
       case 'circle':
+        shapeObj.radius = size / 2;
         this.drawCircle(pos, endPos);
         break;
       case 'rectangle':
+        shapeObj.width = size;
+        shapeObj.height = size;
         this.drawRectangle(pos, endPos);
         break;
       case 'triangle':
         this.drawTriangle(pos, endPos);
         break;
       case 'line':
+        shapeObj.x2 = endPos.x;
+        shapeObj.y2 = endPos.y;
         this.drawLine(pos, endPos);
         break;
       default:
         console.warn('Unknown shape type:', shapeType);
     }
+
+    // 添加到图形列表
+    this.addDrawnObject(shapeObj);
 
     this.saveToHistory();
   }
@@ -897,6 +921,8 @@ export class DrawingEngine {
     }
 
     console.log(`[DEBUG] smartDraw 开始，中心坐标: (${centerX}, ${centerY})`);
+    console.log(`[DEBUG] 绘图步骤数量: ${steps.length}`);
+    console.log(`[DEBUG] 步骤详情:`, JSON.stringify(steps, null, 2));
 
     // 保存当前状态
     const savedState = {
@@ -907,7 +933,8 @@ export class DrawingEngine {
 
     // 执行每个绘图步骤
     steps.forEach((step, index) => {
-      this.debug.log(`执行绘图步骤 ${index + 1}: ${step.type}`);
+      console.log(`[DEBUG] ========== 步骤 ${index + 1} ==========`);
+      console.log(`[DEBUG] 原始步骤:`, JSON.stringify(step));
 
       // 将相对坐标转换为绝对坐标
       const absoluteStep = { ...step };
@@ -930,12 +957,14 @@ export class DrawingEngine {
         absoluteStep.y2 = centerY + step.y2;
       }
 
-      console.log(`[DEBUG] 步骤 ${index + 1}: 相对坐标 (${step.x}, ${step.y}) -> 绝对坐标 (${absoluteStep.x}, ${absoluteStep.y})`);
+      console.log(`[DEBUG] 类型: ${absoluteStep.type}, 绝对坐标: (${absoluteStep.x}, ${absoluteStep.y})`);
+      console.log(`[DEBUG] 完整参数:`, JSON.stringify(absoluteStep));
 
       // 设置颜色
       if (absoluteStep.color) {
         this.ctx.fillStyle = absoluteStep.color;
         this.ctx.strokeStyle = absoluteStep.color;
+        console.log(`[DEBUG] 设置颜色: ${absoluteStep.color}`);
       }
 
       // 设置线宽
@@ -946,28 +975,101 @@ export class DrawingEngine {
       // 根据类型绘制
       switch (absoluteStep.type) {
         case 'circle':
+          console.log(`[DEBUG] 绘制圆形: radius=${absoluteStep.radius}`);
           this.drawSmartCircle(absoluteStep);
+          this.addDrawnObject({
+            type: 'circle',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            radius: absoluteStep.radius,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
           break;
         case 'ellipse':
+          console.log(`[DEBUG] 绘制椭圆: width=${absoluteStep.width}, height=${absoluteStep.height}`);
           this.drawSmartEllipse(absoluteStep);
+          this.addDrawnObject({
+            type: 'ellipse',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            width: absoluteStep.width,
+            height: absoluteStep.height,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
           break;
         case 'rectangle':
+          console.log(`[DEBUG] 绘制矩形: width=${absoluteStep.width}, height=${absoluteStep.height}`);
           this.drawSmartRectangle(absoluteStep);
+          this.addDrawnObject({
+            type: 'rectangle',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            width: absoluteStep.width,
+            height: absoluteStep.height,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
           break;
         case 'triangle':
+          console.log(`[DEBUG] 绘制三角形: size=${absoluteStep.size}`);
           this.drawSmartTriangle(absoluteStep);
+          this.addDrawnObject({
+            type: 'triangle',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            size: absoluteStep.size,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
           break;
         case 'line':
+          console.log(`[DEBUG] 绘制直线: (${absoluteStep.x1},${absoluteStep.y1}) -> (${absoluteStep.x2},${absoluteStep.y2})`);
           this.drawSmartLine(absoluteStep);
+          this.addDrawnObject({
+            type: 'line',
+            x: absoluteStep.x1,
+            y: absoluteStep.y1,
+            x2: absoluteStep.x2,
+            y2: absoluteStep.y2,
+            color: absoluteStep.color || '#000000'
+          });
           break;
         case 'arc':
+          console.log(`[DEBUG] 绘制弧线`);
           this.drawSmartArc(absoluteStep);
           break;
         case 'path':
+          console.log(`[DEBUG] 绘制路径`);
           this.drawSmartPath(absoluteStep, centerX, centerY);
           break;
+        case 'star':
+          console.log(`[DEBUG] 绘制星星: size=${absoluteStep.size}`);
+          this.drawStarBySize({ x: absoluteStep.x, y: absoluteStep.y, size: absoluteStep.size || 50, filled: absoluteStep.filled !== false });
+          this.addDrawnObject({
+            type: 'star',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            size: absoluteStep.size || 50,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
+          break;
+        case 'heart':
+          console.log(`[DEBUG] 绘制心形: size=${absoluteStep.size}`);
+          this.drawHeartBySize({ x: absoluteStep.x, y: absoluteStep.y, size: absoluteStep.size || 50, filled: absoluteStep.filled !== false });
+          this.addDrawnObject({
+            type: 'heart',
+            x: absoluteStep.x,
+            y: absoluteStep.y,
+            size: absoluteStep.size || 50,
+            color: absoluteStep.color || '#000000',
+            filled: absoluteStep.filled !== false
+          });
+          break;
         default:
-          console.warn('未知的绘图类型:', absoluteStep.type);
+          console.warn(`[DEBUG] 未知的绘图类型: "${absoluteStep.type}"，跳过此步骤`);
       }
     });
 
@@ -984,7 +1086,431 @@ export class DrawingEngine {
 
     // 保存到历史
     this.saveToHistory();
-    this.debug.log('智能绘图完成');
+    console.log(`[DEBUG] smartDraw 完成`);
+  }
+
+  /**
+   * 添加图形对象到列表（用于后续修改）
+   * @param {Object} obj - 图形对象
+   */
+  addDrawnObject(obj) {
+    this.drawnObjects.push(obj);
+    this.debug.log(`添加图形对象: ${obj.type}, 位置: (${obj.x}, ${obj.y})`);
+  }
+
+  /**
+   * 选择图形（通过索引）
+   * @param {number} index - 图形索引
+   * @returns {boolean} 是否选择成功
+   */
+  selectObject(index) {
+    if (index >= 0 && index < this.drawnObjects.length) {
+      this.selectedObjectIndex = index;
+      this.debug.log(`选中图形 #${index}: ${this.drawnObjects[index].type}`);
+      this.redrawWithSelection();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 选择最后一个图形
+   * @returns {boolean} 是否选择成功
+   */
+  selectLastObject() {
+    if (this.drawnObjects.length > 0) {
+      return this.selectObject(this.drawnObjects.length - 1);
+    }
+    return false;
+  }
+
+  /**
+   * 选择第一个图形
+   * @returns {boolean} 是否选择成功
+   */
+  selectFirstObject() {
+    if (this.drawnObjects.length > 0) {
+      return this.selectObject(0);
+    }
+    return false;
+  }
+
+  /**
+   * 修改选中图形的属性
+   * @param {Object} updates - 要修改的属性
+   * @returns {boolean} 是否修改成功
+   */
+  modifySelectedObject(updates) {
+    if (this.selectedObjectIndex >= 0 && this.selectedObjectIndex < this.drawnObjects.length) {
+      const obj = this.drawnObjects[this.selectedObjectIndex];
+      Object.assign(obj, updates);
+      this.debug.log(`修改图形 #${this.selectedObjectIndex}:`, updates);
+
+      // 如果修改了颜色，直接重新绘制这个图形
+      if (updates.color) {
+        this.redrawObjectWithNewColor(this.selectedObjectIndex, updates.color);
+      } else {
+        // 其他属性修改需要重绘全部
+        this.redrawAll();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 用新颜色重新绘制单个图形（保留其他内容）
+   * @param {number} index - 图形索引
+   * @param {string} newColor - 新颜色
+   */
+  redrawObjectWithNewColor(index, newColor) {
+    if (index < 0 || index >= this.drawnObjects.length) return;
+
+    const obj = this.drawnObjects[index];
+
+    // 保存当前画布
+    const currentImage = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+    // 清空画布
+    this.fillBackground();
+
+    // 恢复画布
+    this.ctx.putImageData(currentImage, 0, 0);
+
+    // 用新颜色重新绘制该图形
+    this.ctx.save();
+    this.ctx.fillStyle = newColor;
+    this.ctx.strokeStyle = newColor;
+
+    switch (obj.type) {
+      case 'circle':
+        const r = obj.radius || obj.size || 50;
+        this.ctx.beginPath();
+        this.ctx.arc(obj.x, obj.y, r, 0, Math.PI * 2);
+        obj.filled ? this.ctx.fill() : this.ctx.stroke();
+        break;
+      case 'ellipse':
+        const ew = obj.width || 50;
+        const eh = obj.height || 80;
+        this.ctx.beginPath();
+        this.ctx.ellipse(obj.x, obj.y, ew / 2, eh / 2, 0, 0, Math.PI * 2);
+        obj.filled ? this.ctx.fill() : this.ctx.stroke();
+        break;
+      case 'rectangle':
+        const rw = obj.width || 100;
+        const rh = obj.height || 80;
+        if (obj.filled) {
+          this.ctx.fillRect(obj.x - rw / 2, obj.y - rh / 2, rw, rh);
+        } else {
+          this.ctx.strokeRect(obj.x - rw / 2, obj.y - rh / 2, rw, rh);
+        }
+        break;
+      case 'triangle':
+        const ts = obj.size || 100;
+        this.ctx.beginPath();
+        this.ctx.moveTo(obj.x, obj.y - ts / 2);
+        this.ctx.lineTo(obj.x - ts / 2, obj.y + ts / 2);
+        this.ctx.lineTo(obj.x + ts / 2, obj.y + ts / 2);
+        this.ctx.closePath();
+        obj.filled ? this.ctx.fill() : this.ctx.stroke();
+        break;
+      case 'star':
+        this.drawStarBySize({ x: obj.x, y: obj.y, size: obj.size || 50, filled: obj.filled !== false });
+        break;
+      case 'heart':
+        this.drawHeartBySize({ x: obj.x, y: obj.y, size: obj.size || 50, filled: obj.filled !== false });
+        break;
+      case 'line':
+        this.ctx.beginPath();
+        this.ctx.moveTo(obj.x, obj.y);
+        this.ctx.lineTo(obj.x2, obj.y2);
+        this.ctx.stroke();
+        break;
+      default:
+        console.warn(`未知的图形类型: ${obj.type}`);
+    }
+
+    this.ctx.restore();
+
+    // 如果选中，重新绘制高亮
+    if (this.selectedObjectIndex === index) {
+      this.drawObjectHighlight(obj);
+    }
+
+    // 绘制网格
+    this.drawGrid();
+
+    // 保存到历史
+    this.saveToHistory();
+  }
+
+  /**
+   * 修改指定图形的属性
+   * @param {number} index - 图形索引
+   * @param {Object} updates - 要修改的属性
+   * @returns {boolean} 是否修改成功
+   */
+  modifyObject(index, updates) {
+    if (index >= 0 && index < this.drawnObjects.length) {
+      const obj = this.drawnObjects[index];
+      Object.assign(obj, updates);
+      this.debug.log(`修改图形 #${index}:`, updates);
+      this.redrawAll();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 删除选中的图形
+   * @returns {boolean} 是否删除成功
+   */
+  deleteSelectedObject() {
+    if (this.selectedObjectIndex >= 0 && this.selectedObjectIndex < this.drawnObjects.length) {
+      const deleted = this.drawnObjects.splice(this.selectedObjectIndex, 1)[0];
+      this.debug.log(`删除图形: ${deleted.type}`);
+      this.selectedObjectIndex = -1;
+      this.redrawAll();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 删除指定图形
+   * @param {number} index - 图形索引
+   * @returns {boolean} 是否删除成功
+   */
+  deleteObject(index) {
+    if (index >= 0 && index < this.drawnObjects.length) {
+      const deleted = this.drawnObjects.splice(index, 1)[0];
+      this.debug.log(`删除图形 #${index}: ${deleted.type}`);
+      if (this.selectedObjectIndex === index) {
+        this.selectedObjectIndex = -1;
+      } else if (this.selectedObjectIndex > index) {
+        this.selectedObjectIndex--;
+      }
+      this.redrawAll();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 移动选中的图形
+   * @param {number} dx - x方向偏移
+   * @param {number} dy - y方向偏移
+   * @returns {boolean} 是否移动成功
+   */
+  moveSelectedObject(dx, dy) {
+    if (this.selectedObjectIndex >= 0 && this.selectedObjectIndex < this.drawnObjects.length) {
+      const obj = this.drawnObjects[this.selectedObjectIndex];
+      obj.x = (obj.x || 0) + dx;
+      obj.y = (obj.y || 0) + dy;
+      this.debug.log(`移动图形 #${this.selectedObjectIndex}: (${dx}, ${dy})`);
+      this.redrawAll();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 获取图形数量
+   * @returns {number} 图形数量
+   */
+  getObjectCount() {
+    return this.drawnObjects.length;
+  }
+
+  /**
+   * 获取选中的图形
+   * @returns {Object|null} 选中的图形
+   */
+  getSelectedObject() {
+    if (this.selectedObjectIndex >= 0 && this.selectedObjectIndex < this.drawnObjects.length) {
+      return this.drawnObjects[this.selectedObjectIndex];
+    }
+    return null;
+  }
+
+  /**
+   * 获取所有图形列表
+   * @returns {Array} 图形列表
+   */
+  getDrawnObjects() {
+    return [...this.drawnObjects];
+  }
+
+  /**
+   * 重绘所有图形
+   */
+  redrawAll() {
+    // 清空画布
+    this.fillBackground();
+
+    // 重新绘制所有图形
+    this.drawnObjects.forEach((obj) => {
+      this.drawObject(obj);
+    });
+
+    // 绘制网格
+    this.drawGrid();
+
+    // 保存到历史
+    this.saveToHistory();
+  }
+
+  /**
+   * 重绘所有图形并高亮选中的图形
+   */
+  redrawWithSelection() {
+    // 保存当前画布内容
+    const currentImage = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+
+    // 清空画布
+    this.fillBackground();
+
+    // 恢复原始画布内容
+    this.ctx.putImageData(currentImage, 0, 0);
+
+    // 如果有选中的图形，绘制高亮效果
+    if (this.selectedObjectIndex >= 0 && this.selectedObjectIndex < this.drawnObjects.length) {
+      const obj = this.drawnObjects[this.selectedObjectIndex];
+      this.drawObjectHighlight(obj);
+    }
+
+    // 绘制网格
+    this.drawGrid();
+  }
+
+  /**
+   * 绘制图形的高亮效果
+   * @param {Object} obj - 图形对象
+   */
+  drawObjectHighlight(obj) {
+    if (!obj || !obj.type) return;
+
+    // 保存状态
+    this.ctx.save();
+
+    // 设置高亮样式
+    this.ctx.strokeStyle = '#00ff00';
+    this.ctx.lineWidth = 3;
+    this.ctx.shadowColor = '#00ff00';
+    this.ctx.shadowBlur = 15;
+
+    // 根据类型绘制高亮边框
+    switch (obj.type) {
+      case 'circle':
+        const r = obj.radius || obj.size || 50;
+        this.ctx.beginPath();
+        this.ctx.arc(obj.x, obj.y, r + 5, 0, Math.PI * 2);
+        this.ctx.stroke();
+        break;
+      case 'ellipse':
+        const ew = obj.width || 50;
+        const eh = obj.height || 80;
+        this.ctx.beginPath();
+        this.ctx.ellipse(obj.x, obj.y, ew / 2 + 5, eh / 2 + 5, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+        break;
+      case 'rectangle':
+        const rw = obj.width || 100;
+        const rh = obj.height || 80;
+        this.ctx.strokeRect(obj.x - rw / 2 - 5, obj.y - rh / 2 - 5, rw + 10, rh + 10);
+        break;
+      case 'triangle':
+        const ts = obj.size || 100;
+        this.ctx.beginPath();
+        this.ctx.moveTo(obj.x, obj.y - ts / 2 - 5);
+        this.ctx.lineTo(obj.x - ts / 2 - 5, obj.y + ts / 2 + 5);
+        this.ctx.lineTo(obj.x + ts / 2 + 5, obj.y + ts / 2 + 5);
+        this.ctx.closePath();
+        this.ctx.stroke();
+        break;
+      case 'star':
+      case 'heart':
+        const ss = obj.size || 50;
+        this.ctx.beginPath();
+        this.ctx.arc(obj.x, obj.y, ss / 2 + 5, 0, Math.PI * 2);
+        this.ctx.stroke();
+        break;
+      case 'line':
+        this.ctx.beginPath();
+        this.ctx.moveTo(obj.x, obj.y);
+        this.ctx.lineTo(obj.x2, obj.y2);
+        this.ctx.stroke();
+        break;
+      default:
+        console.warn(`未知的图形类型: ${obj.type}`);
+    }
+
+    // 恢复状态
+    this.ctx.restore();
+  }
+
+  /**
+   * 绘制单个图形对象
+   * @param {Object} obj - 图形对象
+   * @param {boolean} isSelected - 是否选中（高亮显示）
+   */
+  drawObject(obj, isSelected = false) {
+    if (!obj || !obj.type) return;
+
+    // 保存状态
+    this.ctx.save();
+
+    // 设置颜色
+    this.ctx.fillStyle = obj.color || '#000000';
+    this.ctx.strokeStyle = obj.color || '#000000';
+
+    // 如果选中，添加高亮边框
+    if (isSelected) {
+      this.ctx.shadowColor = '#00ff00';
+      this.ctx.shadowBlur = 10;
+    }
+
+    // 根据类型绘制
+    switch (obj.type) {
+      case 'circle':
+        this.drawSmartCircle(obj);
+        break;
+      case 'ellipse':
+        this.drawSmartEllipse(obj);
+        break;
+      case 'rectangle':
+        this.drawSmartRectangle(obj);
+        break;
+      case 'triangle':
+        this.drawSmartTriangle(obj);
+        break;
+      case 'star':
+        this.drawStarBySize(obj);
+        break;
+      case 'heart':
+        this.drawHeartBySize(obj);
+        break;
+      case 'line':
+        this.drawSmartLine(obj);
+        break;
+      case 'arc':
+        this.drawSmartArc(obj);
+        break;
+      default:
+        console.warn(`未知的图形类型: ${obj.type}`);
+    }
+
+    // 恢复状态
+    this.ctx.restore();
+  }
+
+  /**
+   * 清空图形列表
+   */
+  clearObjects() {
+    this.drawnObjects = [];
+    this.selectedObjectIndex = -1;
+    this.debug.log('清空图形列表');
   }
 
   /**
