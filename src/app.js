@@ -628,6 +628,19 @@ class VoiceDrawingApp {
 
     try {
       switch (action) {
+        case 'multiStep':
+          // 执行多步指令
+          if (params.steps && Array.isArray(params.steps)) {
+            this.debug.log(`执行多步指令，共 ${params.steps.length} 步`);
+            const results = [];
+            for (const step of params.steps) {
+              const result = this.executeAIParsedCommand(step);
+              results.push(result);
+              this.debug.log(`步骤执行结果: ${JSON.stringify(result)}`);
+            }
+            return { success: true, message: `已完成 ${params.steps.length} 个操作` };
+          }
+          break;
         case 'setTool':
           if (params.tool) {
             this.setTool(params.tool);
@@ -644,6 +657,12 @@ class VoiceDrawingApp {
           if (params.size) {
             this.setSize(params.size);
             return { success: true, message: `已设置大小为${params.size}` };
+          }
+          break;
+        case 'setFill':
+          if (params.fill !== undefined) {
+            this.appState.setFillMode(params.fill);
+            return { success: true, message: params.fill ? '已开启填充' : '已关闭填充' };
           }
           break;
         case 'undo':

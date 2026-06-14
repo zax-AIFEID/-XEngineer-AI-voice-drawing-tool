@@ -143,6 +143,184 @@ export class AICommandParser {
 用户: "把颜色改成蓝色"
 返回: {"action": "setColor", "params": {"color": "#0000ff"}}
 
+## 模式四：多步组合指令
+当用户指令包含多个操作（如设置颜色+绘制形状），返回指令数组：
+{"action": "multiStep", "params": {"steps": [指令数组]}}
+
+示例：
+用户: "画一个黄色的五角星"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ffff00"}},
+  {"action": "draw", "params": {"shape": "star", "x": 400, "y": 300, "size": 50}}
+]}}
+
+用户: "画一个红色的大圆"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ff0000"}},
+  {"action": "setSize", "params": {"size": 30}},
+  {"action": "draw", "params": {"shape": "circle", "x": 400, "y": 300, "radius": 80}}
+]}}
+
+用户: "在坐标500,500画一个蓝色的三角形"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#0000ff"}},
+  {"action": "draw", "params": {"shape": "triangle", "x": 500, "y": 500, "size": 60}}
+]}}
+
+用户: "画一个绿色的填充矩形"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#00ff00"}},
+  {"action": "setFill", "params": {"fill": true}},
+  {"action": "draw", "params": {"shape": "rectangle", "x": 400, "y": 300, "width": 100, "height": 80}}
+]}}
+
+用户: "粉色实心爱心"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ff69b4"}},
+  {"action": "setFill", "params": {"fill": true}},
+  {"action": "draw", "params": {"shape": "heart", "x": 400, "y": 300, "size": 60}}
+]}}
+
+用户: "画一个紫色的大星星"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#800080"}},
+  {"action": "setSize", "params": {"size": 30}},
+  {"action": "draw", "params": {"shape": "star", "x": 400, "y": 300, "size": 80}}
+]}}
+
+用户: "在坐标500,500画一个橙色填充圆"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ffa500"}},
+  {"action": "setFill", "params": {"fill": true}},
+  {"action": "draw", "params": {"shape": "circle", "x": 500, "y": 500, "radius": 60}}
+]}}
+
+用户: "画一个蓝色空心小三角形"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#0000ff"}},
+  {"action": "setFill", "params": {"fill": false}},
+  {"action": "setSize", "params": {"size": 5}},
+  {"action": "draw", "params": {"shape": "triangle", "x": 400, "y": 300, "size": 30}}
+]}}
+
+用户: "坐标200,300画一个红色实心大椭圆"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ff0000"}},
+  {"action": "setFill", "params": {"fill": true}},
+  {"action": "setSize", "params": {"size": 20}},
+  {"action": "draw", "params": {"shape": "ellipse", "x": 200, "y": 300, "width": 120, "height": 80}}
+]}}
+
+用户: "画一个黄色填充的五角星，大小为50"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ffff00"}},
+  {"action": "setFill", "params": {"fill": true}},
+  {"action": "draw", "params": {"shape": "star", "x": 400, "y": 300, "size": 50}}
+]}}
+
+用户: "在画布中心画一个粉色的大爱心"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setColor", "params": {"color": "#ff69b4"}},
+  {"action": "setSize", "params": {"size": 25}},
+  {"action": "draw", "params": {"shape": "heart", "x": 400, "y": 300, "size": 100}}
+]}}
+
+用户: "紧贴着正方形上方画一个三角形"
+返回: {"action": "smartDraw", "params": {"object": "房子", "x": 400, "y": 300, "steps": [
+  {"type": "rectangle", "x": 0, "y": 50, "width": 100, "height": 100, "color": "#8b4513", "filled": true},
+  {"type": "triangle", "x": 0, "y": 0, "size": 120, "color": "#a52a2a", "filled": true}
+]}}
+
+用户: "在圆的旁边画一个正方形"
+返回: {"action": "smartDraw", "params": {"object": "圆和正方形", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": -60, "y": 0, "radius": 40, "color": "#ff0000", "filled": true},
+  {"type": "rectangle", "x": 60, "y": -30, "width": 80, "height": 80, "color": "#0000ff", "filled": true}
+]}}
+
+用户: "在三角形下面画一个圆"
+返回: {"action": "smartDraw", "params": {"object": "三角形和圆", "x": 400, "y": 300, "steps": [
+  {"type": "triangle", "x": 0, "y": -30, "size": 80, "color": "#ffa500", "filled": true},
+  {"type": "circle", "x": 0, "y": 50, "radius": 35, "color": "#00ff00", "filled": true}
+]}}
+
+用户: "画一个房子形状"
+返回: {"action": "smartDraw", "params": {"object": "房子", "x": 400, "y": 300, "steps": [
+  {"type": "rectangle", "x": 0, "y": 50, "width": 120, "height": 100, "color": "#8b4513", "filled": true},
+  {"type": "triangle", "x": 0, "y": -20, "size": 140, "color": "#a52a2a", "filled": true},
+  {"type": "rectangle", "x": 0, "y": 80, "width": 30, "height": 50, "color": "#4a4a4a", "filled": true}
+]}}
+
+用户: "画一个笑脸"
+返回: {"action": "smartDraw", "params": {"object": "笑脸", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 60, "color": "#ffcc00", "filled": true},
+  {"type": "circle", "x": -20, "y": -15, "radius": 8, "color": "#000000", "filled": true},
+  {"type": "circle", "x": 20, "y": -15, "radius": 8, "color": "#000000", "filled": true},
+  {"type": "arc", "x": 0, "y": 10, "radius": 25, "startAngle": 20, "endAngle": 160, "color": "#000000", "filled": false}
+]}}
+
+用户: "画一个月亮"
+返回: {"action": "smartDraw", "params": {"object": "月亮", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 50, "color": "#ffffcc", "filled": true},
+  {"type": "circle", "x": 15, "y": -5, "radius": 40, "color": "#ffffff", "filled": true}
+]}}
+
+用户: "画一个弯月亮"
+返回: {"action": "smartDraw", "params": {"object": "弯月亮", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": 0, "y": 0, "radius": 50, "color": "#ffffcc", "filled": true},
+  {"type": "circle", "x": 25, "y": 0, "radius": 42, "color": "#ffffff", "filled": true}
+]}}
+
+用户: "画一个星星和月亮"
+返回: {"action": "smartDraw", "params": {"object": "星星和月亮", "x": 400, "y": 300, "steps": [
+  {"type": "circle", "x": -50, "y": 0, "radius": 40, "color": "#ffffcc", "filled": true},
+  {"type": "circle", "x": -35, "y": -5, "radius": 32, "color": "#ffffff", "filled": true},
+  {"type": "circle", "x": 60, "y": -20, "radius": 8, "color": "#ffff00", "filled": true}
+]}}
+
+相对位置说明：
+- "上方"/"上面"/"顶部": 在目标图形的上方，紧贴边缘
+- "下方"/"下面"/"底部": 在目标图形的下方，紧贴边缘
+- "旁边"/"左侧"/"右边": 在目标图形的左侧或右侧，紧贴边缘
+- 当用户说"紧贴着A画B"或"在A旁边画B"时，使用smartDraw模式绘制组合图形
+
+颜色映射：
+- 红色: #ff0000
+- 橙色: #ffa500
+- 黄色: #ffff00
+- 绿色: #00ff00
+- 蓝色: #0000ff
+- 紫色: #800080
+- 粉色: #ff69b4
+- 黑色: #000000
+- 白色: #ffffff
+- 灰色: #808080
+- 棕色: #8b4513
+- 金色: #ffd700
+- 青色: #00ffff
+- 深蓝: #000080
+- 浅蓝: #add8e6
+- 深红: #8b0000
+- 浅绿: #90ee90
+
+形状映射：
+- 圆/圆形: circle
+- 矩形/方形/长方形: rectangle
+- 三角形: triangle
+- 椭圆/扁圆: ellipse
+- 星星/五角星: star
+- 爱心/心形/心: heart
+- 直线/线: line
+
+大小映射：
+- 小: size 5-10
+- 中: size 15-20
+- 大: size 25-30
+- 超大: size 40-50
+
+填充映射：
+- 实心/填充/填满: fill true
+- 空心/描边/不填充: fill false
+
 请只返回JSON，不要其他内容。`;
   }
 
