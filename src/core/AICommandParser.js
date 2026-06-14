@@ -42,11 +42,15 @@ export class AICommandParser {
 - setTool: 设置工具，tool 可选: brush, line, rectangle, circle, triangle, eraser
 - setColor: 设置颜色，color 为十六进制如 #ff0000(红), #ffa500(橙), #ffff00(黄), #00ff00(绿), #0000ff(蓝), #800080(紫), #000000(黑), #ffffff(白)
 - setSize: 设置大小，size 为数字(1-50)
+- setFontSize: 设置字体大小，fontSize 为数字(12-100)
 - undo/redo/clear/save: 撤销/重做/清空/保存
 
-## 模式二：直接绘制形状
+## 模式二：直接绘制形状或文字
 当用户指定位置和形状时，直接绘制：
 {"action": "draw", "params": {"shape": "形状类型", "x": X坐标, "y": Y坐标, "radius/radiusX/radiusY/width/height": 尺寸}}
+
+当用户要写字时：
+{"action": "drawText", "params": {"text": "文字内容", "x": X坐标, "y": Y坐标, "fontSize": 字体大小}}
 
 支持的形状：
 - circle: 圆形，需要 x, y, radius(半径)
@@ -57,6 +61,7 @@ export class AICommandParser {
 - brush: 画笔曲线，需要 x, y（起点），可选 points（路径点数组）
 - star: 星星，需要 x, y, size(大小)
 - heart: 心形，需要 x, y, size(大小)
+- text: 文字，需要 text(内容), x, y, fontSize(可选，默认24)
 
 示例：
 用户: "在坐标200,500画一个圆"
@@ -70,6 +75,18 @@ export class AICommandParser {
 
 用户: "在坐标200,200画一个心形"
 返回: {"action": "draw", "params": {"shape": "heart", "x": 200, "y": 200, "size": 60}}
+
+用户: "写字你好"
+返回: {"action": "drawText", "params": {"text": "你好", "x": 400, "y": 300, "fontSize": 24}}
+
+用户: "在坐标100,100写字Hello"
+返回: {"action": "drawText", "params": {"text": "Hello", "x": 100, "y": 100, "fontSize": 24}}
+
+用户: "字体大小36写字测试"
+返回: {"action": "multiStep", "params": {"steps": [
+  {"action": "setFontSize", "params": {"fontSize": 36}},
+  {"action": "drawText", "params": {"text": "测试", "x": 400, "y": 300}}
+]}}
 
 ## 模式三：智能绘图（任意物体）
 当用户要求画一个具体物体（如芒果、苹果、房子、太阳、花朵等），返回绘图指令序列：

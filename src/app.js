@@ -699,6 +699,15 @@ class VoiceDrawingApp {
             return { success: true, message: `已绘制${objectName}` };
           }
           break;
+        case 'drawText':
+          if (params.text) {
+            const x = params.x || this.appState.getPosition().x;
+            const y = params.y || this.appState.getPosition().y;
+            const fontSize = params.fontSize || 24;
+            this.drawingEngine.drawText({ x, y }, params.text, fontSize);
+            return { success: true, message: `已写入文字: ${params.text}` };
+          }
+          break;
       }
 
       return { success: false, message: '未知操作' };
@@ -983,6 +992,42 @@ class VoiceDrawingApp {
     } catch (error) {
       this.debug.error(`smartDraw 失败: ${error.message}`, error);
       throw error;
+    }
+  }
+
+  /**
+   * 绘制文字
+   * @param {string} text - 文字内容
+   * @param {Object} position - 位置 {x, y}（可选，默认当前位置）
+   * @param {number} fontSize - 字体大小（可选，默认 24）
+   */
+  drawText(text, position = null, fontSize = 24) {
+    try {
+      if (!this.drawingEngine) {
+        throw new Error('drawingEngine 未初始化');
+      }
+
+      const pos = position || this.appState.getPosition();
+      this.debug.log(`绘制文字: "${text}" 在位置 (${pos.x}, ${pos.y}), 字体大小: ${fontSize}`);
+      this.drawingEngine.drawText(pos, text, fontSize);
+
+      if (this.speechFeedback) {
+        this.speechFeedback.speak(`已写入文字: ${text}`);
+      }
+    } catch (error) {
+      this.debug.error(`drawText 失败: ${error.message}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 设置字体大小
+   * @param {number} size - 字体大小
+   */
+  setFontSize(size) {
+    if (this.appState) {
+      this.appState.setFontSize(size);
+      this.debug.log(`字体大小已设置为: ${size}`);
     }
   }
 
